@@ -1,13 +1,72 @@
-# Expo Router Example
+# A Portfolio Tracker - Investory (Work in Progess)
 
-Use [`expo-router`](https://docs.expo.dev/router/introduction/) to build native navigation using files in the `app/` directory.
+A React Native mobile application for tracking stocks and crypto assets, viewing market relevant news, and managing investment portfolios.
 
-## 🚀 How to use
+## Features (In Development)
+- **User Authentication**: Secure login and registration system
+- **Market News**: Stay updated with the latest market news
+- **Search**: Search and track your favorite assets
+- **Portfoio Management**: Create and manage multiple portfolios
 
-```sh
-npx create-expo-app -e with-router
+## Tech Stack
+- **Frontend**:
+  - React Native
+  - Expo router for navigation
+  - React query for fetching
+  - Context API for state management
+
+- **Backend**:
+  - Node.js with Express
+  - PostgreSQL database
+  - JWT Authentication
+
+## Prerequisites:
+- Node.js (v14 or higher)
+- npm or yarn
+- PostgreSQL
+- Polygon.io API key
+- Android Studio/Xcode for mobile development
+
+## Installation:
+1. Clone this repository:
+```bash
+git clone https://github.com/bryannjonathan/portfolio-tracker
+```
+2. Install dependecies:
+```bash
+npm install
+```
+4. Setup up environment: create a `.env` file in the root directory with:
+```env
+JWT_SECRET_KEY=your_jwt_secret
+POLYGON_API=your_polygon_api_key
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DB_HOST=your_db_host
+DB_PORT=your_db_port
+DB_NAME=your_db_name
 ```
 
-## 📝 Notes
+## To run the app:
+1. Start the backend server:
+```bash
+nodemon ./server/app
+```
+2. Start the Expo development server:
+```bash
+npx expo start
+```
+3. Swith to Expo Go and run on your preferred platform:
+- Press `a` for Android
+- Press `i` for iOS
+- Scan the QR code with Expo Go app for physical device
 
-- [Expo Router: Docs](https://docs.expo.dev/router/introduction/)
+## Current Development Status:
+✅ Authentication system
+✅ Home screen with news feed
+✅ Asset search functionality
+🛠️ Portfolio management
+📝 More features coming soon...
+
+## Contributing
+This is a personal project. While it's not open for open contribution at the moment, feel free to fork the repository and and experiment with your own features.
