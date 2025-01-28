@@ -1,0 +1,457 @@
+import { Dimensions, View, Text, StyleSheet, RefreshControl, FlatList, ScrollView, TouchableOpacity } from 'react-native';
+import { theme } from '../../asset/theme';
+import { wp, hp } from '../../helpers/common';
+import Button from '../../components/Button';
+import AntDesign from '@expo/vector-icons/AntDesign';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import Entypo from '@expo/vector-icons/Entypo';
+import Feather from '@expo/vector-icons/Feather';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
+import Loading from '../../components/Loading';
+
+
+const Portfolio = () => {
+    const { user } = useAuth();
+    const userId = user.user_id;
+
+    const [isEdit, setIsEdit] = useState(false);
+
+    const router = useRouter()
+
+    const url = 'http://10.0.2.2:3000/api/portfolios'
+
+    // Fetch portfolios
+    const fetchPortfolios = async () => {
+        console.log(`userId: ${userId}`)
+        
+        // const response = await axios.get(`http://10.0.2.2:3000/api/portfolios`, { userId })
+        const response = await axios.get(`${url}/${userId}`);
+        return response.data
+    }
+
+    // React query
+    const {
+        data: portfolioData,
+        isLoading,
+        isFetching,
+        refetch,
+    } = useQuery({
+        queryKey: ["portfolios", userId],
+        queryFn: fetchPortfolios,
+    })
+
+    console.log('portfolioData:', portfolioData);
+
+    // Get culmulative data
+    const [totalBaseValue, setTotalBaseValue] = useState(0)
+    const [totalCurrValue, setTotalCurrValue] = useState(0) 
+    const [change, setChange] = useState(0)
+    const [percentChange, setPercentChange] = useState(0)
+
+    useEffect(() => {
+        if (portfolioData && !isLoading && !isFetching){
+            let totalBaseValue = 0;
+            let totalCurrValue = 0;
+
+            for (let i = 0; i < portfolioData.length; i++){
+                totalBaseValue += portfolioData.data[i].base_investment;
+                totalCurrValue += portfolioData.data[i].current_valuation;
+            }
+
+            let percentChange = 0;
+            let change = 0;
+            if (totalBaseValue > 0) {
+                change = totalCurrValue - totalBaseValue
+                percentChange = (((change)/totalBaseValue)*100)
+            }
+
+            setTotalBaseValue(totalBaseValue)
+            setTotalCurrValue(totalCurrValue)
+            setPercentChange(percentChange)
+            setChange(change)
+
+        }
+
+    }, [portfolioData, isLoading, isFetching])
+
+
+    // format a number to  $1,000,000.00 format
+    const formatNumber = (number) => {
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(number);
+    }
+
+    const formatChange = (number, isPercent = false) => {
+        const formattedNum = formatNumber(number)
+        const prefix = number > 0 ? '+' : '';
+        return isPercent ? `${prefix}${formattedNum}` : `${prefix}$${formattedNum}`
+
+        
+        
+
+    }
+
+    // Render component to render each portfolio
+    const renderItem = ( { item } ) => {
+        const changeVal = parseFloat(((item.currentValue - item.baseValue) / item.baseValue )* 100).toFixed(2);
+        
+        let change = changeVal;
+        let changeStyle = styles.neutralChange;
+
+        if (changeVal > 0){
+            change = `+${changeVal}` 
+            changeStyle = styles.positiveChange;
+        } else if (changeVal < 0){
+            change = changeVal;
+            changeStyle = styles.negativeChange;
+        }
+
+        return(
+            <TouchableOpacity
+                onPress={() => router.push({
+                    pathname: '/portfolioDetail',
+                    params: { 
+                        portfolioId: item.portfolio_id,
+                        name: item.name,
+                        baseInvestment: item.base_investment,
+                        currentValuation: item.current_valuation,
+                        profitLoss: item.profit_loss,
+                        percentChange: item.percentage_change,
+
+                    }
+                })}
+            >
+                <View style={styles.portfolio}>
+                    <View style={styles.portfolioLeft}>
+                        <Text style={styles.portfolioName}>{item.name}</Text>
+                        <View style={styles.portfolioBottom}>
+                            <Text style={styles.portfolioValue}>${formatNumber(item.current_valuation)}</Text>
+                            <Text style={[styles.portfolioChange, changeStyle]}>({formatChange(item.percentage_change, true)}%)</Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.portfolioOptions}>
+                        {isEdit && (
+                            <Button 
+                                // title={"delete"}
+                                icon={<AntDesign name="delete" size={hp(2.5)} color={theme.colors.primary}/>}
+                                buttonStyle={styles.deleteButton}
+                                textStyle={styles.deleteText}
+                                onPress={() => {}}
+                            />
+                        )}
+
+                    </View>
+
+
+                </View>
+
+            </TouchableOpacity>
+        ) 
+    };
+
+
+    if (isLoading || isFetching){
+        return(
+            <ScreenWrapper bg={theme.colors.background}>
+                <View style={styles.container}>
+                    {/* Heading */}
+                    <View style={styles.heading}>
+                        <Text style={styles.headingText}>My Assets</Text>
+                    </View>
+                    <Loading />
+                </View>
+            </ScreenWrapper>
+        )
+    }
+
+    return(
+        <ScreenWrapper bg={theme.colors.background}> 
+            <ScrollView contentContainerStyle={{flexGrow: 1}}>
+                <View style={styles.container}>
+                    {/* Heading */}
+                    <View style={styles.heading}>
+                        <Text style={styles.headingText}>My Assets</Text>
+                    </View>
+
+                    {/* Value of the whole portfolio*/}
+                    <View style={styles.valueHeading}>
+                        <View style={styles.valueHeadingTop}>
+                            <Text style={styles.allAccounts}>All Accounts</Text>
+                            <Text style={styles.totalAsset}>total asset</Text>
+                        </View>
+                        <Text style={styles.values}>${formatNumber(totalCurrValue)}</Text>
+                        <View style={styles.valueHeadingTop}>
+                            { /*<Text style={styles.valueProfitLoss}>Profit/Loss</Text> */}
+                            <View style={styles.valueHeadingTop}>
+                                <Text style={styles.valueChange}>+${formatNumber(change)}</Text>
+                                <Text style={styles.valueChange}>{formatNumber(percentChange)}%</Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Container for each Portfolios*/}
+                    <View style={styles.portfolioContainer}>
+
+                        {/* Title and Add Button*/}
+                        <View style={styles.portfolioHeading}>
+                            <Text style={styles.portfolioText}>Portfolios</Text>
+                            {isEdit ? (
+                                <View style={styles.portfolioHeadingOptions}>
+                                    <Button 
+                                        title="Done"
+                                        onPress={() => {setIsEdit(false)}}
+                                        textStyle={styles.saveText}
+                                        buttonStyle={styles.saveButton}
+                                    />
+                                </View>
+                            ): (
+                                <View style={styles.portfolioHeadingOptions}>
+                                    <Button 
+                                        icon={<Feather name="edit" size={hp(2.2)} color={theme.colors.textLight} />}
+                                        buttonStyle={styles.editButton}
+                                        textStyle={styles.editText}
+                                        onPress={() => {setIsEdit(true)}}
+                                    />
+                                    <Button 
+                                        icon={<Entypo name="plus" size={hp(3)} color={theme.colors.textLight}/>}
+                                        buttonStyle={styles.addButton}
+                                        textStyle={styles.addText}
+                                        onPress={() => {router.push("/addPortfolio")}}
+                                    />
+                                </View>
+                            )}
+                        </View>
+
+                        {/* List of each portfolio */}
+                        <FlatList 
+                            data={portfolioData.data}
+                            keyExtractor={(item) => item["portfolio_id"]}
+                            renderItem={renderItem}
+                            contentContainerStyle={styles.portfolioList}
+                            scrollEnabled={false}
+                        />
+
+                    </View>
+
+                </View>
+            </ScrollView>
+        </ScreenWrapper>
+    )
+}
+
+const styles = StyleSheet.create({
+    container:{
+        flex: 1,
+        paddingHorizontal: wp(5),
+    },
+
+    heading:{
+        flexDirection: "row",
+        // backgroundColor: "green",
+        alignItems: "center",
+    },
+
+    headingText:{
+        fontSize: hp(4.5),
+        color: theme.colors.primary,
+        fontWeight: theme.fonts.bold,
+        flex: 1,
+    },
+
+    valueHeading: {
+        paddingVertical: hp(2), 
+    },
+
+    valueHeadingTop:{
+        flexDirection: 'row',
+        gap: wp(1.5),
+    },
+
+    allAccounts:{
+        color: theme.colors.primary,
+        fontWeight: theme.colors.bold,
+    },
+
+    totalAsset:{
+        color: theme.colors.textLight,
+        
+    },
+
+    valueProfitLoss:{
+        color: theme.colors.textLight,
+    },
+
+    values: {
+        color: theme.colors.primary,
+        fontSize: hp(4),
+        fontWeight: theme.fonts.bold,
+    },
+
+    valueChange: {
+        color: theme.sentimentColor.positive,
+        fontSize: hp(2),
+        fontWeight: theme.fonts.medium,
+    },
+
+    portfolioContainer:{
+        backgroundColor: "#1a1a1a",
+        paddingVertical: hp(1),
+        marginHorizontal: wp(-5),
+        padding: wp(3.5),
+        gap: hp(1.2),
+        flex: 1,
+    },
+
+    portfolioHeading: {
+        // width: "100%",
+        // flex: 1,
+        justifyContent: "flex-end",
+        // backgroundColor: "red",
+        flexDirection: "row",
+        alignItems: "center",
+        paddingVertical: hp(1),
+        paddingHorizontal: hp(1.5),
+        // backgroundColor: "red",
+    },
+
+    portfolioText:{
+        // backgroundColor: "green",
+        fontSize: hp(3),
+        fontWeight: theme.fonts.medium,
+        color: theme.colors.primary,
+        flex: 1,
+        fontWeight: theme.fonts.medium,
+    },
+
+    portfolioHeadingOptions:{
+        flexDirection: "row",
+        gap: wp(3),
+    },
+
+
+    addButton:{
+        // padding: hp(1),
+        backgroundColor: "transparent",
+        height: hp(4.5),
+    },
+
+    addText:{
+        color: theme.colors.textLight,
+        fontWeight: theme.fonts.normal,
+    },
+
+    editButton:{
+        // padding: hp(1),
+        backgroundColor: "transparent",
+        height: hp(4.5),
+    },
+
+    editText:{
+        color: theme.colors.textLight,
+        fontWeight: theme.fonts.normal,
+    }, 
+
+    portfolioList:{
+        // backgroundColor: "red",
+        gap: hp(1),
+    },
+
+    portfolio:{
+        // backgroundColor: "blue",
+        // fontWeight: theme.fonfts.medium, 
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: hp(2.5),
+        backgroundColor: theme.colors.background,
+        borderRadius: hp(2),
+        
+    },
+
+    portfolioLeft:{
+        // flexDirection: "row",
+        flex: 1,
+        // alignItems: "center",
+        // justifyContent: "center",
+    },
+
+    portfolioName: {
+        fontWeight: theme.fonts.medium,
+        fontSize: hp(2.25),
+        color: theme.colors.primary,
+    },
+
+    portfolioBottom: {
+        flexDirection: "row",
+        gap: wp(2),
+    },
+
+    portfolioValue: {
+        // backgroundColor: "blue",
+        alignSelf: "center",
+        color: theme.colors.textLight,
+    },
+    
+    portfolioChange: {
+        // backgroundColor: "green",
+        alignSelf: "flex-start",
+    },
+
+    portfolioOptions:{
+        flex: 1,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        gap: wp(5),
+    },
+
+    positiveChange:{
+        color: theme.sentimentColor.positive,
+    },
+
+    negativeChange:{
+        color: theme.sentimentColor.negative,
+    },
+    
+    neutralChange:{
+        color: theme.sentimentColor.neutral,
+    },
+
+    renameButton:{
+        backgroundColor: "transparent",
+        height: hp(4),
+    },
+    
+    deleteButton:{
+        height: hp(4),
+        backgroundColor: "transparent",
+
+    },
+    
+    saveButton:{
+        backgroundColor: theme.colors.primary,
+        height: hp(4.5),
+        paddingVertical: hp(1),
+        paddingHorizontal: hp(2),
+        // borderRadius: 50,
+    },
+    
+    saveText:{
+        fontWeight: theme.fonts.normal,
+        color: theme.colors.inputBg,
+        fontSize: hp(1.9),
+
+    },
+
+});
+
+
+export default Portfolio;
+

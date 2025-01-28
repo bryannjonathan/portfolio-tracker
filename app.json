@@ -5,6 +5,18 @@
       "expo-router"
     ],
     "name": "my-app",
-    "slug": "my-app"
+    "slug": "my-app",
+    "entryPoint": "./app/index.js",
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "763881ca-37f8-4181-b341-2eded338c604"
+      }
+    },
+    "android": {
+      "package": "investory.com"
+    }
   }
 }
