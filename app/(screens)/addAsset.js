@@ -1,37 +1,25 @@
-import { View, Text, StyleSheet, TouchableWithoutFeedback, Keyboard, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableWithoutFeedback, Keyboard, FlatList, TouchableOpacity } from 'react-native';
 import React, { useState, useEffect, } from 'react';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import { theme } from '../../asset/theme';
 import BackButton from '../../components/BackButton';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AntDesign } from '@expo/vector-icons'
 import { wp, hp } from '../../helpers/common';
 import axios from 'axios';
 
-
-const Search = () => {
+const AddAsset = () => {
     const router = useRouter();
     const [query, setQuery] = useState("")
     const [result, setResult] = useState([])
     const [error, setError] = useState(false)
     const [isStock, setIsStock] = useState(true)
 
-    // used for crypto to filer duplicate coins
-    const filterCoins = (data) => {
-          const uniqueCoins = [];
+    const { portfolioId } = useLocalSearchParams()
 
-          // Loop through the data and filter out the pairs
-          data.forEach(item => {
-            // Check if the coin is already added (to avoid duplicates)
-            if (!uniqueCoins.find(coin => coin.base_currency_name === item.base_currency_name)) {
-              uniqueCoins.push(item);
-            }
-          });
-
-          return uniqueCoins;
-    };
+    console.log(`portfolioId: ${portfolioId}`)
 
     // Fetch Stock or Crypto tickers from the backend
     const fetchTickers = async(query) => {
@@ -55,7 +43,7 @@ const Search = () => {
         // delay API calls
         const delayDebounceFn = setTimeout(() => {
             if (query) {
-                fetchTickers (query).then((data) => {
+                fetchTickers(query).then((data) => {
                     setResult(data);
                 });
             } else {
@@ -72,25 +60,49 @@ const Search = () => {
     const renderItem = ({item}) => {
         if (isStock){
             return(
-                <View style={styles.resultItem}>
-                    <View style={styles.tickerLeft}>
-                        <Text style={styles.tickerSymbol}>{item["ticker"]}</Text> 
-                        <Text style={styles.tickerName}>{item["name"]}</Text>
-                    </View>
+                <TouchableOpacity
+                    onPress={() => router.push({
+                        pathname:'/buyAsset',
+                        params:{
+                            portfolioId: portfolioId,
+                            type: 'stock',
+                            ticker: item['ticker'],
+                            name: item['name']
+                        }
+                    })}
+                >
+                    <View style={styles.resultItem}>
+                        <View style={styles.tickerLeft}>
+                            <Text style={styles.tickerSymbol}>{item["ticker"]}</Text> 
+                            <Text style={styles.tickerName}>{item["name"]}</Text>
+                        </View>
 
-                    <Text style={styles.tickerExchange}>{item["primary_exchange"]}</Text>
-                </View> 
+                        <Text style={styles.tickerExchange}>{item["primary_exchange"]}</Text>
+                    </View> 
+                </TouchableOpacity>
             )
         } else {
             return(
-                <View style={styles.resultItem}>
-                    <View style={styles.tickerLeft}>
-                        <Text style={styles.tickerSymbol}>{item["symbol"]}</Text> 
-                        <Text style={styles.tickerName}>{item["name"]}</Text>
-                    </View>
+                <TouchableOpacity
+                    onPress={() => router.push({
+                        pathname:'/buyAsset',
+                        params:{
+                            portfolioId: portfolioId,
+                            type: 'crypto',
+                            ticker: item['symbol'],
+                            name: item['name']
+                        }
+                    })}
+                >
+                    <View style={styles.resultItem}>
+                        <View style={styles.tickerLeft}>
+                            <Text style={styles.tickerSymbol}>{item["symbol"]}</Text> 
+                            <Text style={styles.tickerName}>{item["name"]}</Text>
+                        </View>
 
-                    <Text style={styles.tickerExchange}>{item["primary_exchange"]}</Text>
-                </View> 
+                        <Text style={styles.tickerExchange}>{item["primary_exchange"]}</Text>
+                    </View> 
+                </TouchableOpacity>
             )
         }
     };
@@ -101,35 +113,39 @@ const Search = () => {
                 <View style={styles.container}>
 
                     {/* Top Container: back button and search bar*/}
-                    <View style={styles.topContainer}>
-                        <View style={styles.backButtonContainer}>
-                            <BackButton router={router}/>
-                        </View>
+                    <View style={styles.topHeading}>
+                        <BackButton 
+                            router={router}         
+                        />
+                        <Text style={styles.heading}>Add Asset</Text>
+                    </View>
 
-                        <Input  
+                    <View style={styles.body}>
+                        <Input 
+                            placeholder={"e.g Bitcoin, Apple, NVIDIA"}
+                            containerStyles={styles.inputContainer}                        
                             icon={<AntDesign name="search1" size={24} color={theme.colors.textLight}/>}
-                            placeholder="e.g APPL, NVDA, BTC"
-                            containerStyles={styles.inputContainer}
                             onChangeText={(text) => setQuery(text)}
                         />
-                    </View>
+                        {/* Switch for Stock and Crypto */}
+                        <View style={styles.switchContainer}>
+                            <Button
+                                title="Stock"
+                                onPress={() => setIsStock(true)}
+                                buttonStyle={[styles.switchButton , isStock && styles.activeButton]}
+                                textStyle={[isStock && styles.activeText, !isStock && styles.inactiveText]}
+                            /> 
+                            <Button
+                                title="Crypto"
+                                onPress={() => setIsStock(false)}
+                                buttonStyle={[styles.switchButton , !isStock && styles.activeButton]}
+                                textStyle={[!isStock && styles.activeText, isStock && styles.inactiveText]}
+                            /> 
 
-                    {/* Switch for Stock and Crypto */}
-                    <View style={styles.switchContainer}>
-                        <Button
-                            title="Stock"
-                            onPress={() => setIsStock(true)}
-                            buttonStyle={[styles.switchButton , isStock && styles.activeButton]}
-                            textStyle={[isStock && styles.activeText, !isStock && styles.inactiveText]}
-                        /> 
-                        <Button
-                            title="Crypto"
-                            onPress={() => setIsStock(false)}
-                            buttonStyle={[styles.switchButton , !isStock && styles.activeButton]}
-                            textStyle={[!isStock && styles.activeText, isStock && styles.inactiveText]}
-                        /> 
-                        
+                        </View>
                     </View>
+                    
+
 
 
                     {/* Search resuls */}
@@ -156,12 +172,30 @@ const Search = () => {
             </TouchableWithoutFeedback>
         </ScreenWrapper>
     ) 
+
+    
 }
 
 const styles = StyleSheet.create({
     container:{
         flex:1,
         paddingHorizontal: wp(5), 
+    },
+
+    topHeading:{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: wp(5),
+    },
+
+    heading:{
+        color: theme.colors.primary,
+        fontSize: hp(3.1),
+        fontWeight: theme.fonts.bold,
+    },
+
+    body:{
+        marginTop: hp(2),
     },
     
     
@@ -179,7 +213,6 @@ const styles = StyleSheet.create({
     },
     
     inputContainer:{
-        flex: 1,
         height: hp(5), 
         
     },
@@ -271,5 +304,5 @@ const styles = StyleSheet.create({
 });
 
 
-export default Search;
-//
+export default AddAsset;
+

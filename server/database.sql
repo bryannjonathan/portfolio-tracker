@@ -86,6 +86,17 @@ GENERATED ALWAYS AS (
     END
 ) STORED;
 
+-- Fixed missing transaction_id default value by generating random UUID in the psql database
+ALTER TABLE transactions 
+ALTER COLUMN transaction_id 
+SET DEFAULT gen_random_uuid();
 
+-- Add sectors to the table assets
+ALTER TABLE assets
+ADD COLUMN sector VARCHAR(255);
+
+-- Add crypto_id to suport searching for Coingecko
+ALTER TABLE assets
+ADD COLUMN crypto_id VARCHAR(50);
 
 

@@ -39,8 +39,9 @@ const Home = () => {
     const handleSearchPress = () => {
         router.push("/(screens)/search")
     }
+
+    console.log(`auth = ${user}`)
     
-  // console.log("im here");
 
     const fetchNews = async ({ pageParam = 1 }) => {
         console.log(`Fetch news for page ${pageParam}`)

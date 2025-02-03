@@ -28,6 +28,7 @@ app.use(cors());
 // const SECRET_KEY = "Hello"
 const SECRET_KEY = process.env.JWT_SECRET_KEY;
 const POLYGON_KEY = process.env.POLYGON_API;	
+const ALPHA_KEY = process.env.ALPHAV_API;
 
 // ROUTES
 
@@ -377,8 +378,9 @@ app.post("/api/portfolios/", async (req, res) => {
 });
 
 /*
-    * Get all portfolios
-    * Returns list of portfolios for that user_id
+ * GET /api/porfolios
+ * Get all portfolios
+ * Returns list of portfolios for that user_id
 */
 
 app.get("/api/portfolios/:userId", async (req, res) => {
@@ -394,12 +396,24 @@ app.get("/api/portfolios/:userId", async (req, res) => {
     }
 
     try{
+        // Fetch all of user's portfolio
         const portfolios = await pool.query(
             'SELECT * FROM Portfolios WHERE user_id = $1 ORDER BY name ASC',
             [userId]
         );
 
-        console.log(`portfolio data for ${userId}: `, portfolios)
+        console.log(`portfolio data for ${userId}: `, portfolios.rows)
+        //
+        // // Update assets current price
+        // for (const portfolio of portfolio.rows){
+        //     const assets = await pool.query(
+        //         'SELECT * FROM portfolio_assets WHERE portfolio_id = $1',
+        //         [portfolio['portfolio_id']]
+        //     );
+        //
+        //     console.log(`assets of portfolio ${portfolioId}: `, assets)
+        //
+        // }
 
         res.status(200).json({
             message: "Successfully retrieve portfolios.",
@@ -417,6 +431,140 @@ app.get("/api/portfolios/:userId", async (req, res) => {
 
     
 });
+
+// test API 
+app.get('/api/getSector/', async(req,res) => {
+    console.log('Currently getting sector')
+
+    const ticker = 'META'
+    const alphaUrl = `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${ticker}&apikey=${ALPHA_KEY}`
+    console.log(`apiKey = ${ALPHA_KEY}`)
+    console.log(`symbol=${ticker}`)
+
+    try{
+        const response = await axios.get(alphaUrl)
+        console.log('response.data:', response.data)
+        res.status(200).json({
+            success: true,
+            data: response.data['Sector'],
+        })
+    } catch (error) {
+        console.log('error: ', error)
+        res.status(404).json({
+            success: false,
+            message: error.message,
+        })
+    }
+
+})
+
+/*
+ * POST /api/purchase_asset
+ * When user select an asset to buy
+ * Adds to their transaction table and portfolio table
+*/
+app.post('/api/purchase_asset', async(req, res) => {
+    const { portfolioId, type, quantity, price, ticker, name } = req.body;
+
+    console.log(`Purchasing ${quantity} ${name} for $${price} each for portfolio ${portfolioId}`)
+
+    if (!portfolioId || !type || !quantity || !price || !ticker){
+        return res.status(400).json({
+            success: false,
+            message: 'Missing required fields.'
+        })
+    }
+
+
+    try{
+        // Start transaction
+        await pool.query('BEGIN')
+
+        // Check portfolio exist
+        const portfolioCheck = await pool.query('SELECT * FROM portfolios WHERE portfolio_id = $1;', [portfolioId]);
+        if (portfolioCheck.rows.length === 0){
+            await pool.query('ROLLBACK') // rollback when portfolio don't exist
+            return res.status(404).json({
+                success: false,
+                message: 'Portfolio not found',
+            })
+        }
+
+        // Check if asset exist
+        let asset_id;
+        let sector;
+        
+        const assetCheck = await pool.query('SELECT * FROM assets WHERE symbol = $1', [ticker])
+
+        if (assetCheck.rows.length === 0){
+
+            // get the sector of that asset
+            if (type === 'crypto'){
+                sector = 'crypto'
+            } else {
+                const alphaUrl = `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${ticker}&apikey=${ALPHA_KEY}`
+                const alphaRes = await axios.get(alphaUrl)
+
+
+
+                sector = alphaRes.data['Sector'] || 'Unknown'
+                console.log(`sector for ${name} is ${sector}`)
+            }
+
+            // insert into assets table
+            const newAsset = await pool.query(
+                'INSERT INTO assets (name, symbol, asset_type, sector) VALUES ($1, $2, $3, $4) RETURNING asset_id;', [name, ticker, type, sector]
+            ) 
+
+            asset_id = newAsset.rows[0].asset_id;
+        } else {
+            // Asset exist in the table
+            asset_id = assetCheck.rows[0].asset_id;
+        }
+
+        const totalVal = quantity * price;
+
+        // Check if asset already in portfolio
+        const existingAsset = await pool.query('SELECT * FROM portfolio_assets WHERE portfolio_id = $1 AND asset_id = $2', [portfolioId, asset_id])
+    
+        if (existingAsset.rows.length > 0) {
+            // Asset exist in the portfolio
+            await pool.query(
+                'UPDATE portfolio_assets SET amount = amount + $1, average_buy_price = ((average_buy_price * amount) + ($2 * $3)) / (amount + $1) WHERE portfolio_id = $4 AND asset_id = $5', [quantity, price, quantity, portfolioId, asset_id]
+            );
+        } else {
+            // Asset does not exist in the portfolio
+            await pool.query('INSERT INTO portfolio_assets (portfolio_id, asset_id, amount, average_buy_price) VALUES ($1, $2, $3, $4)', [portfolioId, asset_id, quantity, price])
+        }
+
+        // Log the transaction
+        const transactionRes = await pool.query('INSERT INTO transactions (portfolio_id, ticker, ticker_name, transaction_type, quantity, total_value, currency, transaction_date) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW()) RETURNING transaction_id;', [portfolioId, ticker, name, 'buy', quantity, totalVal, 'USD'])
+
+        // Update the portfolio valuation
+        await pool.query(
+            'UPDATE portfolios SET current_valuation = current_valuation + $1 WHERE portfolio_id = $2', [totalVal, portfolioId]
+        );
+
+
+        await pool.query('COMMIT')
+        console.log(`Success adding ${name} to ${portfolioId}`)
+
+        res.status(200).json({
+            success: true,
+            message: 'Asset purchased successfully',
+            transcation_id: transactionRes.rows[0].transaction_id,
+        });
+
+    } catch (error) {
+        await pool.query('ROLLBACK');
+        console.error('Error purchasing asset: ', error)
+        res.status(500).json({
+            success: false,
+            message: 'Internal Server Error',
+        })
+    } 
+})
+
 
 
 

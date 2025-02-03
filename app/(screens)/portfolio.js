@@ -1,4 +1,4 @@
-import { Dimensions, View, Text, StyleSheet, RefreshControl, FlatList, ScrollView, TouchableOpacity } from 'react-native';
+import { Dimensions, View, Text, StyleSheet, RefreshControl, FlatList, ScrollView } from 'react-native';
 import { theme } from '../../asset/theme';
 import { wp, hp } from '../../helpers/common';
 import Button from '../../components/Button';
@@ -7,243 +7,49 @@ import ScreenWrapper from '../../components/ScreenWrapper';
 import Entypo from '@expo/vector-icons/Entypo';
 import Feather from '@expo/vector-icons/Feather';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import Loading from '../../components/Loading';
 
-
-const Portfolio = () => {
-    const { user } = useAuth();
-    const userId = user.user_id;
-
-    const [isEdit, setIsEdit] = useState(false);
-
-    const router = useRouter()
-
-    const url = 'http://10.0.2.2:3000/api/portfolios'
-
-    // Fetch portfolios
-    const fetchPortfolios = async () => {
-        console.log(`userId: ${userId}`)
-        
-        // const response = await axios.get(`http://10.0.2.2:3000/api/portfolios`, { userId })
-        const response = await axios.get(`${url}/${userId}`);
-        return response.data
-    }
-
-    // React query
-    const {
-        data: portfolioData,
-        isLoading,
-        isFetching,
-        refetch,
-    } = useQuery({
-        queryKey: ["portfolios", userId],
-        queryFn: fetchPortfolios,
-    })
-
-    console.log('portfolioData:', portfolioData);
-
-    // Get culmulative data
-    const [totalBaseValue, setTotalBaseValue] = useState(0)
-    const [totalCurrValue, setTotalCurrValue] = useState(0) 
-    const [change, setChange] = useState(0)
-    const [percentChange, setPercentChange] = useState(0)
-
-    useEffect(() => {
-        if (portfolioData && !isLoading && !isFetching){
-            let totalBaseValue = 0;
-            let totalCurrValue = 0;
-
-            for (let i = 0; i < portfolioData.length; i++){
-                totalBaseValue += portfolioData.data[i].base_investment;
-                totalCurrValue += portfolioData.data[i].current_valuation;
-            }
-
-            let percentChange = 0;
-            let change = 0;
-            if (totalBaseValue > 0) {
-                change = totalCurrValue - totalBaseValue
-                percentChange = (((change)/totalBaseValue)*100)
-            }
-
-            setTotalBaseValue(totalBaseValue)
-            setTotalCurrValue(totalCurrValue)
-            setPercentChange(percentChange)
-            setChange(change)
-
-        }
-
-    }, [portfolioData, isLoading, isFetching])
+import BackButton from '../../components/BackButton';
 
 
-    // format a number to  $1,000,000.00 format
-    const formatNumber = (number) => {
-        return new Intl.NumberFormat('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        }).format(number);
-    }
-
-    const formatChange = (number, isPercent = false) => {
-        const formattedNum = formatNumber(number)
-        const prefix = number > 0 ? '+' : '';
-        return isPercent ? `${prefix}${formattedNum}` : `${prefix}$${formattedNum}`
-
-        
-        
-
-    }
-
-    // Render component to render each portfolio
-    const renderItem = ( { item } ) => {
-        const changeVal = parseFloat(((item.currentValue - item.baseValue) / item.baseValue )* 100).toFixed(2);
-        
-        let change = changeVal;
-        let changeStyle = styles.neutralChange;
-
-        if (changeVal > 0){
-            change = `+${changeVal}` 
-            changeStyle = styles.positiveChange;
-        } else if (changeVal < 0){
-            change = changeVal;
-            changeStyle = styles.negativeChange;
-        }
-
-        return(
-            <TouchableOpacity
-                onPress={() => router.push({
-                    pathname: '/portfolioDetail',
-                    params: { 
-                        portfolioId: item.portfolio_id,
-                        name: item.name,
-                        baseInvestment: item.base_investment,
-                        currentValuation: item.current_valuation,
-                        profitLoss: item.profit_loss,
-                        percentChange: item.percentage_change,
-
-                    }
-                })}
-            >
-                <View style={styles.portfolio}>
-                    <View style={styles.portfolioLeft}>
-                        <Text style={styles.portfolioName}>{item.name}</Text>
-                        <View style={styles.portfolioBottom}>
-                            <Text style={styles.portfolioValue}>${formatNumber(item.current_valuation)}</Text>
-                            <Text style={[styles.portfolioChange, changeStyle]}>({formatChange(item.percentage_change, true)}%)</Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.portfolioOptions}>
-                        {isEdit && (
-                            <Button 
-                                // title={"delete"}
-                                icon={<AntDesign name="delete" size={hp(2.5)} color={theme.colors.primary}/>}
-                                buttonStyle={styles.deleteButton}
-                                textStyle={styles.deleteText}
-                                onPress={() => {}}
-                            />
-                        )}
-
-                    </View>
+const PortfolioDetail = () => {
+    const router = useRouter();
 
 
-                </View>
-
-            </TouchableOpacity>
-        ) 
-    };
-
-
-    if (isLoading || isFetching){
-        return(
-            <ScreenWrapper bg={theme.colors.background}>
-                <View style={styles.container}>
-                    {/* Heading */}
-                    <View style={styles.heading}>
-                        <Text style={styles.headingText}>My Assets</Text>
-                    </View>
-                    <Loading />
-                </View>
-            </ScreenWrapper>
-        )
-    }
+    const { portfolioId, name, baseInvestment, currentValuation, profitLoss, percentChange } = useLocalSearchParams();
 
     return(
-        <ScreenWrapper bg={theme.colors.background}> 
-            <ScrollView contentContainerStyle={{flexGrow: 1}}>
-                <View style={styles.container}>
-                    {/* Heading */}
-                    <View style={styles.heading}>
-                        <Text style={styles.headingText}>My Assets</Text>
-                    </View>
+        <ScreenWrapper bg={theme.colors.background}>
+            <BackButton 
+                router={router}
+            />
 
-                    {/* Value of the whole portfolio*/}
-                    <View style={styles.valueHeading}>
-                        <View style={styles.valueHeadingTop}>
-                            <Text style={styles.allAccounts}>All Accounts</Text>
-                            <Text style={styles.totalAsset}>total asset</Text>
-                        </View>
-                        <Text style={styles.values}>${formatNumber(totalCurrValue)}</Text>
-                        <View style={styles.valueHeadingTop}>
-                            { /*<Text style={styles.valueProfitLoss}>Profit/Loss</Text> */}
-                            <View style={styles.valueHeadingTop}>
-                                <Text style={styles.valueChange}>+${formatNumber(change)}</Text>
-                                <Text style={styles.valueChange}>{formatNumber(percentChange)}%</Text>
-                            </View>
-                        </View>
-                    </View>
+            <Button 
+                onPress={() => router.push({
+                    pathname: '/addAsset',
+                    params: {
+                        portfolioId: portfolioId,
+                    }
+                })} 
+                title={"Add Asset"}
+            />
 
-                    {/* Container for each Portfolios*/}
-                    <View style={styles.portfolioContainer}>
+            
 
-                        {/* Title and Add Button*/}
-                        <View style={styles.portfolioHeading}>
-                            <Text style={styles.portfolioText}>Portfolios</Text>
-                            {isEdit ? (
-                                <View style={styles.portfolioHeadingOptions}>
-                                    <Button 
-                                        title="Done"
-                                        onPress={() => {setIsEdit(false)}}
-                                        textStyle={styles.saveText}
-                                        buttonStyle={styles.saveButton}
-                                    />
-                                </View>
-                            ): (
-                                <View style={styles.portfolioHeadingOptions}>
-                                    <Button 
-                                        icon={<Feather name="edit" size={hp(2.2)} color={theme.colors.textLight} />}
-                                        buttonStyle={styles.editButton}
-                                        textStyle={styles.editText}
-                                        onPress={() => {setIsEdit(true)}}
-                                    />
-                                    <Button 
-                                        icon={<Entypo name="plus" size={hp(3)} color={theme.colors.textLight}/>}
-                                        buttonStyle={styles.addButton}
-                                        textStyle={styles.addText}
-                                        onPress={() => {router.push("/addPortfolio")}}
-                                    />
-                                </View>
-                            )}
-                        </View>
-
-                        {/* List of each portfolio */}
-                        <FlatList 
-                            data={portfolioData.data}
-                            keyExtractor={(item) => item["portfolio_id"]}
-                            renderItem={renderItem}
-                            contentContainerStyle={styles.portfolioList}
-                            scrollEnabled={false}
-                        />
-
-                    </View>
-
-                </View>
-            </ScrollView>
+            <Text>Hello</Text>
+            <Text>{portfolioId}</Text>
+            <Text>{name}</Text>
+            <Text>{baseInvestment}</Text>
+            <Text>{currentValuation}</Text>
+            <Text>{profitLoss}</Text>
+            <Text>{percentChange}</Text>
         </ScreenWrapper>
     )
+    
 }
 
 const styles = StyleSheet.create({
@@ -453,5 +259,5 @@ const styles = StyleSheet.create({
 });
 
 
-export default Portfolio;
+export default PortfolioDetail;
 

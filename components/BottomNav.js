@@ -29,13 +29,13 @@ const BottomNav = () => {
       path: '/search'
     },
     {
-      name: 'Portfolio',
+      name: 'My Assets',
       icon: (isActive) => <Ionicons 
         name={isActive ? "wallet" : "wallet-outline"} 
         size={24} 
         color={isActive ? theme.colors.secondary : theme.colors.textLight} 
       />,
-      path: '/portfolio'
+      path: '/assets'
     },
     {
       name: 'Profile',

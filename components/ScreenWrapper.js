@@ -1,4 +1,4 @@
-// SCREEN WRAPPER SO THE SCREEN DOES NOT COLLIDE WITH THE TOP AREA
+// / SCREEN WRAPPER SO THE SCREEN DOES NOT COLLIDE WITH THE TOP AREA
 import { Text, View } from "react-native";
 import React from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
