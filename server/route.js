@@ -28,6 +28,7 @@ app.use(cors());
 // const SECRET_KEY = "Hello"
 const SECRET_KEY = process.env.JWT_SECRET_KEY;
 const POLYGON_KEY = process.env.POLYGON_API;	
+const FINHUB_KEY = process.env.FINHUB_API;
 const ALPHA_KEY = process.env.ALPHAV_API;
 
 // ROUTES
@@ -331,10 +332,6 @@ app.get("/api/searchCrypto", async(req,res) => {
             })
         }
     }
-
-
-
-   
 });
 
 // Portfolios 
@@ -342,7 +339,6 @@ app.get("/api/searchCrypto", async(req,res) => {
 /* 
  * Create Portfolio
 */
-
 app.post("/api/portfolios/", async (req, res) => {
     const { userId, name } = req.body;
     console.log(`Trying to create portfolio ${name} for user ${userId}`)
@@ -432,21 +428,34 @@ app.get("/api/portfolios/:userId", async (req, res) => {
     
 });
 
-// test API 
+// API Test to return the sector of a stock
 app.get('/api/getSector/', async(req,res) => {
     console.log('Currently getting sector')
-
-    const ticker = 'META'
-    const alphaUrl = `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${ticker}&apikey=${ALPHA_KEY}`
-    console.log(`apiKey = ${ALPHA_KEY}`)
+    
+    // const ticker = 'AAPL'
+    // const ticker = ['AAPL', 'MSFT', 'MSTR', 'NVDA', 'META', 'AMZN', 'NFLX']
+    const ticker = ['JPM']
+    // const alphaUrl = `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${ticker}&apikey=${ALPHA_KEY}`
+    // console.log(`apiKey = ${ALPHA_KEY}`)
     console.log(`symbol=${ticker}`)
-
+    
     try{
-        const response = await axios.get(alphaUrl)
-        console.log('response.data:', response.data)
+        // const response = await axios.get(alphaUrl)
+        const sectors = []
+        for (const tick of ticker){
+            const finhubUrl = `https://finnhub.io/api/v1/stock/profile2?symbol=${tick}&token=${FINHUB_KEY}`
+            const response2 = await axios.get(finhubUrl)
+            console.log(`LOG: response2.data: `, response2.data)
+            sectors.push({
+                ticker: tick,
+                FINHUB_sector: response2.data['finnhubIndustry'],
+            })
+        }
         res.status(200).json({
             success: true,
-            data: response.data['Sector'],
+            ticker: tick,
+            // ALPHAVANTAGE_sector: response.data['Sector'],
+            sectors: sectors,
         })
     } catch (error) {
         console.log('error: ', error)
@@ -458,13 +467,28 @@ app.get('/api/getSector/', async(req,res) => {
 
 })
 
+// Update the sector of the assets table
+app.patch('/api/updateSector/', async(req, res) => {
+    const assets = await pool.query('SELECT * FROM assets')    
+
+    for (const asset of assets.rows){
+        console.log(`LOG: updating ${asset.asset_id} ${asset.name}`)
+        const finhubUrl = `https://finnhub.io/api/v1/stock/profile2?symbol=${asset.symbol}&token=${FINHUB_KEY}`
+        const response = await axios.get(finhubUrl)
+        console.log('New sector: ', response.data['finnhubIndustry'])
+
+        const updateQuery = `UPDATE assets SET sector = '${response.data['finnhubIndustry']}' WHERE asset_id = ${asset.asset_id}`
+        await pool.query(updateQuery)
+    }
+})
+
 /*
  * POST /api/purchase_asset
  * When user select an asset to buy
  * Adds to their transaction table and portfolio table
 */
 app.post('/api/purchase_asset', async(req, res) => {
-    const { portfolioId, type, quantity, price, ticker, name } = req.body;
+    const { portfolioId, type, quantity, price, ticker, name, cryptoId } = req.body;
 
     console.log(`Purchasing ${quantity} ${name} for $${price} each for portfolio ${portfolioId}`)
 
@@ -474,7 +498,6 @@ app.post('/api/purchase_asset', async(req, res) => {
             message: 'Missing required fields.'
         })
     }
-
 
     try{
         // Start transaction
@@ -497,32 +520,41 @@ app.post('/api/purchase_asset', async(req, res) => {
         const assetCheck = await pool.query('SELECT * FROM assets WHERE symbol = $1', [ticker])
 
         if (assetCheck.rows.length === 0){
+            console.log(`${ticker} does not exist in assets`)
 
             // get the sector of that asset
             if (type === 'crypto'){
-                sector = 'crypto'
+                sector = 'Crypto'
+
+
+
             } else {
-                const alphaUrl = `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${ticker}&apikey=${ALPHA_KEY}`
-                const alphaRes = await axios.get(alphaUrl)
-
-
-
-                sector = alphaRes.data['Sector'] || 'Unknown'
-                console.log(`sector for ${name} is ${sector}`)
+                // Using alpha vantage
+                // const alphaUrl = `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${ticker}&apikey=${ALPHA_KEY}`
+                // const alphaRes = await axios.get(alphaUrl)
+                // sector = alphaRes.data['Sector'] || 'Unknown'
+                // console.log(`sector for ${name} is ${sector}`)
+                
+                // Using finhub
+                const finUrl = `https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${FINHUB_KEY}`
+                const finRes = await axios.get(finUrl)
+                sector = finRes.data['finnhubIndustry'];
             }
 
             // insert into assets table
             const newAsset = await pool.query(
-                'INSERT INTO assets (name, symbol, asset_type, sector) VALUES ($1, $2, $3, $4) RETURNING asset_id;', [name, ticker, type, sector]
+                'INSERT INTO assets (name, symbol, asset_type, sector, crypto_id) VALUES ($1, $2, $3, $4, $5) RETURNING asset_id;', [name, ticker, type, sector, cryptoId]
             ) 
 
             asset_id = newAsset.rows[0].asset_id;
         } else {
             // Asset exist in the table
+            console.log(`LOG: ${ticker} has already exist in assets table`)
             asset_id = assetCheck.rows[0].asset_id;
         }
 
         const totalVal = quantity * price;
+        console.log(`LOG: totalVal = ${totalVal}`)
 
         // Check if asset already in portfolio
         const existingAsset = await pool.query('SELECT * FROM portfolio_assets WHERE portfolio_id = $1 AND asset_id = $2', [portfolioId, asset_id])
@@ -530,7 +562,7 @@ app.post('/api/purchase_asset', async(req, res) => {
         if (existingAsset.rows.length > 0) {
             // Asset exist in the portfolio
             await pool.query(
-                'UPDATE portfolio_assets SET amount = amount + $1, average_buy_price = ((average_buy_price * amount) + ($2 * $3)) / (amount + $1) WHERE portfolio_id = $4 AND asset_id = $5', [quantity, price, quantity, portfolioId, asset_id]
+                'UPDATE portfolio_assets SET amount = amount + $1, average_buy_price = ((average_buy_price * amount) + ($2)) / (amount + $1) WHERE portfolio_id = $3 AND asset_id = $4', [quantity, totalVal, portfolioId, asset_id]
             );
         } else {
             // Asset does not exist in the portfolio
@@ -540,10 +572,11 @@ app.post('/api/purchase_asset', async(req, res) => {
         // Log the transaction
         const transactionRes = await pool.query('INSERT INTO transactions (portfolio_id, ticker, ticker_name, transaction_type, quantity, total_value, currency, transaction_date) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW()) RETURNING transaction_id;', [portfolioId, ticker, name, 'buy', quantity, totalVal, 'USD'])
 
-        // Update the portfolio valuation
+        // Update the portfolios' base investment
         await pool.query(
-            'UPDATE portfolios SET current_valuation = current_valuation + $1 WHERE portfolio_id = $2', [totalVal, portfolioId]
+            'UPDATE portfolios SET base_investment = base_investment + $1 WHERE portfolio_id = $2', [totalVal, portfolioId]
         );
+
 
 
         await pool.query('COMMIT')
@@ -565,8 +598,58 @@ app.post('/api/purchase_asset', async(req, res) => {
     } 
 })
 
+/*
+ *  GET /api/assets
+ *  Returns all the assets (list) owned by that by specific portfolio and user
+*/
+app.get('/api/assets', async(req, res) => {
+    const { portfolioId } = req.query
+    // testing 
+    // const portfolioId = 'd3dc5f7e-47b3-492d-a97d-72087c3f17b8'
+    console.log(`LOG: Tryign to get assets for portfolio ${portfolioId}`)
 
+    const assets = await pool.query(`
+        SELECT a.asset_id, a.name, a.symbol, a.asset_type, a.current_price, a.sector, pa.amount, pa.average_buy_price 
+        FROM portfolio_assets pa
+        JOIN assets a ON pa.asset_id = a.asset_id
+        WHERE pa.portfolio_id = $1
+    `, [portfolioId]);
 
+    if (assets.rows.length === 0){
+        res.status(404).json({
+            success: false,
+            message: 'No assets found in this portfolio'
+        })
+    } else {
+        res.status(200).json({
+            success: true,
+            message: 'Assets found',
+            data: assets.rows
+        })
+    } 
+})
+
+// Testing API to test CoinGecko get Price
+app.get('/api/getCryptoPrice', async(req, res) => {
+    const cryptoId = 'bitcoin'
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${cryptoId}&vs_currencies=USD`
+
+    try{
+        const response = await axios.get(url)
+        console.log(response.data)
+
+        res.status(200).json({
+            message: response.data,
+        })
+
+        console.log(`Crypto Price for BTC: ${response.data[cryptoId]['usd']}`)
+
+    } catch(err){
+        console.log('Error Fetching data from CoinGecko: ', err)
+
+    }
+    
+})
 
 
 module.exports = app;

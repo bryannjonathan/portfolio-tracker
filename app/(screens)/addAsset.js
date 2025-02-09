@@ -59,6 +59,7 @@ const AddAsset = () => {
     // Render each ticker itme for both Crypto and Ticker
     const renderItem = ({item}) => {
         if (isStock){
+            // Stock list
             return(
                 <TouchableOpacity
                     onPress={() => router.push({
@@ -67,7 +68,8 @@ const AddAsset = () => {
                             portfolioId: portfolioId,
                             type: 'stock',
                             ticker: item['ticker'],
-                            name: item['name']
+                            name: item['name'],
+                            cryptoId: null,
                         }
                     })}
                 >
@@ -82,6 +84,7 @@ const AddAsset = () => {
                 </TouchableOpacity>
             )
         } else {
+            // Crypto list
             return(
                 <TouchableOpacity
                     onPress={() => router.push({
@@ -90,7 +93,8 @@ const AddAsset = () => {
                             portfolioId: portfolioId,
                             type: 'crypto',
                             ticker: item['symbol'],
-                            name: item['name']
+                            name: item['name'],
+                            cryptoId: item['id'],
                         }
                     })}
                 >

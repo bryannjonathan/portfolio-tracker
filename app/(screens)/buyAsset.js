@@ -13,7 +13,7 @@ import axios from 'axios';
 const BuyAsset = () => {
     const router = useRouter();
     
-    const { portfolioId, type, ticker, name }  = useLocalSearchParams()
+    const { portfolioId, type, ticker, name, cryptoId }  = useLocalSearchParams()
 
     const [amount, setAmount] = useState(0)
     const [price, setPrice] = useState(0.0)
@@ -25,6 +25,7 @@ const BuyAsset = () => {
     console.log(`type: ${type}`)
     console.log(`ticker: ${ticker}`)
     console.log(`name: ${name}`)
+    console.log(`cryptoId: ${cryptoId}`)
 
     const formatNumber = (number) => {
         return new Intl.NumberFormat('en-US', {
@@ -60,14 +61,35 @@ const BuyAsset = () => {
             quantity: quantity,
             price: priceVal,
             ticker: ticker.toString(),
-            name: name.toString()
+            name: name.toString(),
+            cryptoId: cryptoId,
         };
 
 
         try{
             console.log('Enter try statement')
             const res = await axios.post('http://10.0.2.2:3000/api/purchase_asset', data)
-            console.log(res);
+
+            // Logging
+            console.log('LOG: Successful purhcase');
+            console.log(res)
+
+            Alert.alert(
+                'Purchase Successful',
+                `Successfuly purhcased ${amount} of ${name}.`,
+                [
+                    {
+                        text: 'OK',
+                        onPress: () => {
+                            // GO back twice
+                            router.back();
+                            setTimeout(() => router.back(), 100)
+                        }
+                    }
+                ]
+            )
+
+
         } catch (err){
             console.error(err)            
         }

@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
         color: theme.colors.primary,
         fontSize: hp(4.5),
         fontWeight: theme.fonts.extrabold, 
-        // backgroundColor: "blue",
+        // backgroundColor/: "blue",
     },
     
     searchButton:{
@@ -346,7 +346,8 @@ const styles = StyleSheet.create({
 
     ticker:{
         borderRadius: 3,
-        padding: wp(0.8),
+        paddingVertical: wp(0.8),
+        paddingHorizontal: wp(1.4),
         marginRight: wp(2),
         marginVertical: hp(0.5),
         backgroundColor: "red",

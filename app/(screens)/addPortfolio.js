@@ -38,7 +38,12 @@ const addPortfolio = () => {
             const res = await axios.post(url, { userId, name });
             
             Alert.alert("Succes", res.data.message, [
-                { text: "OK", onPress: () => router.back()}
+                { text: "OK", onPress: () => {
+                    router.replace({
+                        pathname: '/assets',
+                        params: { refetchFlag: true }
+                    })
+                }}
             ])
 
             console.log("sucess");

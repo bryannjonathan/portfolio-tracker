@@ -100,3 +100,42 @@ ALTER TABLE assets
 ADD COLUMN crypto_id VARCHAR(50);
 
 
+-- Add automatic updates to portoflio current_valuation to ensure in updates whenever the prices in the asset table changes
+CREATE OR REPLACE FUNCTION update_portfolio_valuations()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Update portfolios based on the latest asset prices
+    WITH PortfolioValuation AS (
+        SELECT
+            pa.portfolio_id,
+            SUM(pa.amount * a.current_price) AS total_value
+        FROM
+            portfolio_assets pa
+        INNER JOIN
+            assets a ON pa.asset_id = a.asset_id
+        GROUP BY
+            pa.portfolio_id
+    )
+    UPDATE portfolios
+    SET current_valuation = pv.total_value
+    FROM PortfolioValuation pv
+    WHERE portfolios.portfolio_id = pv.portfolio_id;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to calls the function after updates to the assets table
+CREATE TRIGGER trigger_update_portfolio_valuations
+AFTER UPDATE ON assets
+FOR EACH STATEMENT
+EXECUTE FUNCTION update_portfolio_valuations();
+
+-- Change the amount in portfolio_asset to 10 decimal places (handle buy bitcoin small)
+ALTER TABLE portfolio_assets
+ALTER COLUMN amount TYPE DECIMAL(15, 10);
+
+
+
+
+

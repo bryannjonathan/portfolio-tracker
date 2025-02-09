@@ -7,7 +7,7 @@ import ScreenWrapper from '../../components/ScreenWrapper';
 import Entypo from '@expo/vector-icons/Entypo';
 import Feather from '@expo/vector-icons/Feather';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
@@ -19,6 +19,7 @@ const Portfolio = () => {
     const userId = user.user_id;
 
     const [isEdit, setIsEdit] = useState(false);
+    const [refreshing, setRefreshing] = useState(false)
 
     const router = useRouter()
 
@@ -44,6 +45,15 @@ const Portfolio = () => {
         queryFn: fetchPortfolios,
     })
 
+    // Refetch portfolios when refetchFlag is true
+    // Used after modifying portfolios
+    useEffect(() => {
+        if (router.params?.refetchFlag){
+            refetch()
+        }
+    }, [router.params])
+    
+
     console.log('portfolioData:', portfolioData);
 
     // Get culmulative data
@@ -53,17 +63,31 @@ const Portfolio = () => {
     const [percentChange, setPercentChange] = useState(0)
 
     useEffect(() => {
-        if (portfolioData && !isLoading && !isFetching){
+        console.log('LOG: Enter use Effect')
+        if (portfolioData &&!isLoading && !isFetching){
+            console.log('LOG: Enter useEffect if statement')
+
+            console.log(`LOG: portfolioData.total: ${portfolioData.total}`)
+            
+            
+
             let totalBaseValue = 0;
             let totalCurrValue = 0;
 
-            for (let i = 0; i < portfolioData.length; i++){
-                totalBaseValue += portfolioData.data[i].base_investment;
-                totalCurrValue += portfolioData.data[i].current_valuation;
+            for (let i = 0; i < portfolioData.total; i++){
+
+                console.log(`LOG: current portfolio: ${portfolioData.data[i].name}; base investment: ${portfolioData.data[i].base_investment}, total current value: ${portfolioData.data[i].current_valuation}`)
+
+                totalBaseValue += parseFloat(portfolioData.data[i].base_investment);
+                totalCurrValue += parseFloat(portfolioData.data[i].current_valuation);
             }
 
             let percentChange = 0;
             let change = 0;
+
+            console.log(`Final base value: ${totalBaseValue}`)
+            console.log(`Final current valuation: ${totalCurrValue}`)
+
             if (totalBaseValue > 0) {
                 change = totalCurrValue - totalBaseValue
                 percentChange = (((change)/totalBaseValue)*100)
@@ -79,7 +103,8 @@ const Portfolio = () => {
     }, [portfolioData, isLoading, isFetching])
 
 
-    // format a number to  $1,000,000.00 format
+
+    // format a number to $1,000,000.00 format
     const formatNumber = (number) => {
         return new Intl.NumberFormat('en-US', {
             minimumFractionDigits: 2,
@@ -87,28 +112,71 @@ const Portfolio = () => {
         }).format(number);
     }
 
+    // For changes. Adds + or % or $
     const formatChange = (number, isPercent = false) => {
-        const formattedNum = formatNumber(number)
-        const prefix = number > 0 ? '+' : '';
-        return isPercent ? `${prefix} ${formattedNum}` : `${prefix}$${formattedNum}`
+        const absNum = Math.abs(number)
+        const formattedNum = formatNumber(absNum)
+        // const prefix = number > 0 ? '+' : '';
+        
+        
+        let prefix = '';
+        // positive number
+        if (number > 0) {
+            prefix = '+'
+        } else if (number < 0){
+            prefix = '-'
+        } 
+        
+        //                      percentage                      $ value
+        return isPercent ? `${prefix}${formattedNum}` : `${prefix}$${formattedNum}`
+            
+
 
     }
 
-    // Render component to render each portfolio
-    const renderItem = ( { item } ) => {
-        const changeVal = parseFloat(((item.currentValue - item.baseValue) / item.baseValue )* 100).toFixed(2);
+    const getStyle = (change, isPercent = false) => {
         
-        let change = changeVal;
-        let changeStyle = styles.neutralChange;
+        let color = theme.sentimentColor.neutral
+        let backgroundColor = 'transparent'
 
-        if (changeVal > 0){
-            change = `+${changeVal}` 
-            changeStyle = styles.positiveChange;
-        } else if (changeVal < 0){
-            change = changeVal;
-            changeStyle = styles.negativeChange;
+        if (change > 0){
+            color = theme.sentimentColor.positive;
+        } else if (change < 0 ){    
+            color = theme.sentimentColor.negative;
         }
 
+
+        if (isPercent){
+            color = theme.colors.primary;
+            if (change > 0){
+                backgroundColor = theme.sentimentColor.positiveBg;
+            } else if (change < 0 ){    
+                backgroundColor = theme.sentimentColor.negativeBg;
+            } else {
+                backgroundColor = theme.sentimentColor.neutralBg;
+            }
+        }
+
+        console.log(`LOG: for ${change}, isPercent:${isPercent} j --> color: ${color} backgroundColor: ${backgroundColor}`)
+        
+        return({
+            color: color,
+            backgroundColor: backgroundColor,
+        })
+
+    }
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        refetch();
+        setTimeout(() => {
+            setRefreshing(false);
+        }, 2000);
+    }
+
+
+    // Render component to render each portfolio
+    const renderItem = ( { item } ) => {
         return(
             <TouchableOpacity
                 onPress={() => router.push({
@@ -129,7 +197,7 @@ const Portfolio = () => {
                         <Text style={styles.portfolioName}>{item.name}</Text>
                         <View style={styles.portfolioBottom}>
                             <Text style={styles.portfolioValue}>${formatNumber(item.current_valuation)}</Text>
-                            <Text style={[styles.portfolioChange, changeStyle]}>({formatChange(item.percentage_change, true)}%)</Text>
+                            <Text style={[styles.portfolioChange, getStyle(item.percentage_change, true)]}>{formatChange(item.percentage_change, true)}%</Text>
                         </View>
                     </View>
 
@@ -170,7 +238,16 @@ const Portfolio = () => {
 
     return(
         <ScreenWrapper bg={theme.colors.background}> 
-            <ScrollView contentContainerStyle={{flexGrow: 1}}>
+            <ScrollView 
+                contentContainerStyle={{flexGrow: 1}}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={[theme.colors.secondary]}
+                    />
+                }
+            >
                 <View style={styles.container}>
                     {/* Heading */}
                     <View style={styles.heading}>
@@ -187,8 +264,18 @@ const Portfolio = () => {
                         <View style={styles.valueHeadingTop}>
                             { /*<Text style={styles.valueProfitLoss}>Profit/Loss</Text> */}
                             <View style={styles.valueHeadingTop}>
-                                <Text style={styles.valueChange}>+${formatNumber(change)}</Text>
-                                <Text style={styles.valueChange}>{formatNumber(percentChange)}%</Text>
+                                {/*<Text style={[styles.valueChange, getStyle(change)]}>{formatChange(change)}</Text>
+                                <Text style={[styles.valueChange, getStyle(change)]}>{formatChange(percentChange)}%</Text>*/}
+                                {change !== 0 && (
+                                    <Feather 
+                                        name= {change > 0 ? "trending-up" : 'trending-down'}
+                                        size={hp(2.5)} 
+                                        color= {change > 0 ? theme.sentimentColor.positive : theme.sentimentColor.negative}
+                                    />
+                            
+                                )}
+                                <Text style={[styles.valueChange, getStyle(change)]}>{formatChange(change)} ({formatChange(percentChange)}%)</Text>
+
                             </View>
                         </View>
                     </View>
@@ -269,6 +356,7 @@ const styles = StyleSheet.create({
     valueHeadingTop:{
         flexDirection: 'row',
         gap: wp(1.5),
+        alignItems: 'center',
     },
 
     allAccounts:{
@@ -292,9 +380,17 @@ const styles = StyleSheet.create({
     },
 
     valueChange: {
-        color: theme.sentimentColor.positive,
+        // color: theme.sentimentColor.positive,
         fontSize: hp(2),
         fontWeight: theme.fonts.medium,
+    },
+
+    valueChangePercent: {
+        fontSize: hp(2),
+        paddingHorizontal: wp(0.8),
+        paddingVertical: wp(1.2),
+        borderRadius: 3,
+        
     },
 
     portfolioContainer:{
@@ -388,6 +484,7 @@ const styles = StyleSheet.create({
     portfolioBottom: {
         flexDirection: "row",
         gap: wp(2),
+        marginTop: hp(0.8),
     },
 
     portfolioValue: {
@@ -397,8 +494,11 @@ const styles = StyleSheet.create({
     },
     
     portfolioChange: {
-        // backgroundColor: "green",
         alignSelf: "flex-start",
+        paddingHorizontal: wp(1.4),
+        paddingVertical: wp(0.8),
+        borderRadius: 3,
+
     },
 
     portfolioOptions:{
@@ -409,17 +509,7 @@ const styles = StyleSheet.create({
         gap: wp(5),
     },
 
-    positiveChange:{
-        color: theme.sentimentColor.positive,
-    },
-
-    negativeChange:{
-        color: theme.sentimentColor.negative,
-    },
     
-    neutralChange:{
-        color: theme.sentimentColor.neutral,
-    },
 
     renameButton:{
         backgroundColor: "transparent",

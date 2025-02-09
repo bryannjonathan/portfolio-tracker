@@ -10,44 +10,375 @@ import { useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
-import { useAuth } from '../../context/AuthContext';
 import Loading from '../../components/Loading';
-
 import BackButton from '../../components/BackButton';
-
+import { PieChart } from 'react-native-chart-kit'; 
+import { getTextOfJSDocComment } from 'typescript';
 
 const PortfolioDetail = () => {
     const router = useRouter();
-
-
     const { portfolioId, name, baseInvestment, currentValuation, profitLoss, percentChange } = useLocalSearchParams();
 
-    return(
-        <ScreenWrapper bg={theme.colors.background}>
-            <BackButton 
-                router={router}
-            />
+    const [isError, setIsError] = useState(false);
 
-            <Button 
-                onPress={() => router.push({
-                    pathname: '/addAsset',
-                    params: {
-                        portfolioId: portfolioId,
-                    }
-                })} 
-                title={"Add Asset"}
-            />
+    // Fetch the assets
+    const url = `http://10.0.2.2:3000/api/assets`
+    const fetchAssets = async () => {
+        try{
+            console.log(`LOG: Fetching assets for portfolio ${portfolioId}`)
+            const response = await axios.get(url, { params : { portfolioId: portfolioId}})
+            console.log("LOG: response.data:", response.data)
+            return response.data
+        } catch (error){
+            // Todo: differentiate empty asset and error fetching
+            console.log('Error fetching data:', error)
+            setIsError(true);
+            console.log('empty asset')
+            return {
+                'success': false,
+                'data':[],
+                'message': 'Error fetching portfolio',
+            } 
+            
+        }
+    }
 
+    // React query
+    const {
+        data: assetRes,
+        isLoading,
+        isFetching,
+        refetch,
+    } = useQuery({
+        queryKey: ["assets", portfolioId],
+        queryFn: fetchAssets,    
+        refetchOnMount: true,
+    })
+
+    const assets = assetRes?.data || [];
+    console.log('LOG: assets: ', assets)
+
+
+    // Refetch assets list when flag is true
+    // Used after user adds an asset to the portfolio
+    useEffect(() => {
+        if(router.params?.refetchFlag){
+            refetch();
+        }
+    }, [router.params?.refetchFlag])
+
+    console.log('LOG: assets: ', assets)
+
+
+
+    // Aggregate values by sector
+    // When finished fetching data
+    const sectorDistribution = assets.reduce((acc, asset) => {
+        const amount = parseFloat(asset.amount);
+        const currentPrice = parseFloat(asset.current_price);
+
+        if(!isNaN(amount) && !isNaN(currentPrice)){
+            console.log(asset.sector)
+            acc[asset.sector] = (acc[asset.sector] || 0) + (amount * currentPrice)
+        }
+
+        return acc;
+
+    }, {});
+
+    const tickerDistribution = assets.reduce((acc, asset) => {
+        const amount = parseFloat(asset.amount);
+        const currentPrice = parseFloat(asset.current_price);
+
+        if(!isNaN(amount) && !isNaN(currentPrice)){
+            console.log(asset.symbol)
+            acc[asset.symbol] = (acc[asset.symbol] || 0) + (amount * currentPrice)
+        }
+
+        return acc;
+    }, {});
+
+    console.log('LOG: final acc', tickerDistribution)
+
+    // Assing colors to sectors based on their order
+    const tickerColorMap = {};
+    const pieChartColors = theme.pieChart;
+    assets.forEach((asset, index) => {
+        if (!tickerColorMap[asset.symbol]){
+            const colorKey = (index % Object.keys(pieChartColors).length) + 1;
+            tickerColorMap[asset.symbol] = pieChartColors[colorKey];
+        }
+    });
+
+
+
+    // Transform arrays into the chart
+    const sectorData = {
+        labels: Object.keys(tickerDistribution),
+        datasets: [
+            {
+                data: Object.values(tickerDistribution),
+            }
+        ]
+    }
+
+    const tickerData = Object.keys(tickerDistribution).map((key) => ({
+        name: key,
+        population: tickerDistribution[key],
+        color: tickerColorMap[key],
+        legendFontColor: theme.colors.primary,
+        legendFontSize: hp(1.5),
+    }))
+
+    console.log('LOG: tickerData: ',tickerData)
+    
+    
+
+    // Functiosn to format/style numbers
+    // Format number to $1,000,000.00 format
+    const formatNumber = (number) => {
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(number);
+    }
+
+    // For changes. Adds + or % or $
+    const formatChange = (number, isPercent = false) => {
+        const absNum = Math.abs(number)
+        const formattedNum = formatNumber(absNum)
+        // const prefix = number > 0 ? '+' : '';
+        
+        
+        let prefix = '';
+        // positive number
+        if (number > 0) {
+            prefix = '+'
+        } else if (number < 0){
+            prefix = '-'
+        } 
+        
+        //                      percentage                      $ value
+        return isPercent ? `${prefix}${formattedNum}` : `${prefix}$${formattedNum}`
             
 
-            <Text>Hello</Text>
-            <Text>{portfolioId}</Text>
-            <Text>{name}</Text>
-            <Text>{baseInvestment}</Text>
-            <Text>{currentValuation}</Text>
-            <Text>{profitLoss}</Text>
-            <Text>{percentChange}</Text>
+
+    }
+
+    const getStyle = (change, isPercent = false) => {
+        
+        let color = theme.sentimentColor.neutral
+        let backgroundColor = 'transparent'
+
+        if (change > 0){
+            color = theme.sentimentColor.positive;
+        } else if (change < 0 ){    
+            color = theme.sentimentColor.negative;
+        }
+
+
+        if (isPercent){
+            color = theme.colors.primary;
+            if (change > 0){
+                backgroundColor = theme.sentimentColor.positiveBg;
+            } else if (change < 0 ){    
+                backgroundColor = theme.sentimentColor.negativeBg;
+            } else {
+                backgroundColor = theme.sentimentColor.neutralBg;
+            }
+        }
+
+        // console.log(`LOG: for ${change}, isPercent:${isPercent} j --> color: ${color} backgroundColor: ${backgroundColor}`)
+        
+        return({
+            color: color,
+            backgroundColor: backgroundColor,
+        })
+
+    }
+
+    const renderAsset = ({item}) => {
+        const totalValue = parseFloat(item.amount) * parseFloat(item.current_price);
+        // console.log(item.percent_change);
+        const profitLoss = totalValue - (parseFloat(item.average_buy_price) * parseFloat(item.amount));
+        const percentChange = ( profitLoss / parseFloat(item.average_buy_price)) * 100;
+        // console.log(percentChange)
+        return(
+            <View style={styles.asset}>
+                <View style={styles.topAsset}>
+                    <View style={styles.row}>
+                        <Text style={styles.assetSymbol}>{item.symbol}</Text>
+                        <Text style={styles.currentAssetPrice}>{item.sector}</Text>
+                    </View>
+                    <View style={styles.row}>
+                        <Text style={styles.subHeadingAsset}>Amount</Text>
+                        <Text style={styles.assetValue}>{item.amount}</Text>
+                    </View>
+                </View>
+
+                {/* Evaluation */}
+                <View style={styles.row}>
+                    <Text style={styles.subHeadingAsset}>Evaluation</Text>
+                    <Text style={styles.assetValue}>${formatNumber(totalValue)}</Text>
+                </View>
+
+                {/* Last Price */}
+                <View style={styles.row}>
+                    <Text style={styles.subHeadingAsset}>Last Price</Text>
+                    <Text style={styles.assetValue}>${formatNumber(item.current_price)}</Text>
+                </View>
+                
+                {/* Average Buy Price */}
+                <View style={styles.row}>
+                    <Text style={styles.subHeadingAsset}>Avg Price</Text>
+                    <Text style={styles.assetValue}>${formatNumber(item.average_buy_price)}</Text>
+                </View>
+
+                {/* Profit/loss and $ */}
+                <View style={styles.row}>
+                    <Text style={styles.subHeadingAsset}>Profit/Loss</Text>
+                    <Text style={styles.assetValue}>{formatChange(profitLoss, false)}</Text>
+                    <Text style={styles.assetValue}>({formatChange(percentChange, false)}%)</Text>
+                </View>
+
+                <Button 
+                    title="SELL" 
+                    onPress={() => {}}
+                    buttonStyle={styles.sellButton}
+                    textStyle={styles.sellButtonText}
+                />
+
+            </View>
+        )
+    }
+
+    const emptyData = [
+        {
+            name: 'No data',
+            population: 1,
+            color: theme.colors.inputBg,
+            legendFontColor: theme.colors.primary,
+            legendFontSize: hp(1.5),
+        }
+    ]
+
+    if (isLoading || isFetching){
+        <ScreenWrapper>
+            <View style={styles.container}>
+                <View style={styles.heading}>
+                    <View style={styles.backButtonContainer}>
+                        <BackButton 
+                            router={router}
+                        />
+                    </View>
+                    <Text style={styles.titleHeading}>{name}</Text>
+                </View>
+                <Loading />
+            </View>
         </ScreenWrapper>
+    }
+
+    return(
+            <ScreenWrapper bg={theme.colors.background}>
+                <ScrollView
+                    // contentContainerStyle={ { flexGrow : 1 } }
+                >
+                <View style={styles.container}>
+                    <View style={styles.heading}>
+                        <View style={styles.backButtonContainer}>
+                            <BackButton 
+                                router={router}
+                            />
+                        </View>
+                        <Text style={styles.titleHeading}>{name}</Text>
+                    </View>
+
+                    <View style={styles.subHeading}>
+                        <View style={styles.valueContainer}>
+                            <Text style={styles.portfolioValue}>${formatNumber(currentValuation)}</Text>
+                            <View style={styles.valueBottom}>
+                                <Text style={[styles.portfolioChange, getStyle(profitLoss)]}>{formatChange(profitLoss)}</Text>
+                                <Text style={[styles.portfolioChange, getStyle(profitLoss)]}>({formatChange(percentChange, true)}%)</Text>
+                            </View>
+                        </View>
+                        
+                    </View>
+
+                    {/* Ticker Pie Chart section */}
+                    <View style={styles.pieChartContainer}>
+                        {assets.length === 0 ? (
+                            // Empty Pie Chart
+                            <PieChart 
+                                data={emptyData} 
+                                width={wp(90)}
+                                height={hp(30)}
+                                chartConfig={{
+                                    backgroundColor: 'blue',
+                                    decimalPlaces: 2,
+                                    color: (opacity = 1) => `rgba(26, 255, 146 ${opacity})`,
+                                    style: {
+                                        borderRadius: 16,
+                                        backgroundColor: 'blue',
+                                        alignItems: 'center',
+                                    },
+                                    strokeWidth: 3,
+                                }}
+                                accessor='population'
+                                paddingLeft={6.5}
+                                backgroundColor='transparent'
+                                hasLegend={false}
+                            />
+                        ): (
+                            <PieChart 
+                                data={tickerData} 
+                                width={wp(90)}
+                                height={hp(30)}
+                                chartConfig={{
+                                    backgroundColor: 'blue',
+                                    decimalPlaces: 2,
+                                    color: (opacity = 1) => `rgba(26, 255, 146 ${opacity})`,
+                                    style: {
+                                        borderRadius: 16,
+                                        backgroundColor: 'blue',
+                                        alignItems: 'center',
+                                    },
+                                    strokeWidth: 3,
+                                }}
+                                accessor='population'
+                                paddingLeft={6.5}
+                                backgroundColor='transparent'
+                            />
+                        )}
+                    </View>
+
+                    {/* Asset list */}
+                    <View style={styles.assetListContainer}>
+                        {/* Title and Button */}
+                        <View style={styles.assetsSectionHeading}>
+                            <Text style={styles.assetsTitle}>Assets</Text>
+                            <Button 
+                                icon={<Entypo name="plus" size={hp(2.5)} color={theme.colors.primary} />}
+                                onPress={() => router.push({
+                                    pathname: '/addAsset',
+                                    params: {
+                                        portfolioId: portfolioId,
+                                    }
+                                })} 
+                                buttonStyle={styles.addButton}
+                            />
+                        </View>
+                        <FlatList
+                            data={assets}
+                            renderItem={renderAsset}
+                            keyExtractor={(item) => item.id}
+                            contentContainerStyle={styles.assetList}
+                            scrollEnabled={false}
+                        />
+                    </View>
+                </View>
+                </ScrollView>
+            </ScreenWrapper>
+
     )
     
 }
@@ -56,79 +387,89 @@ const styles = StyleSheet.create({
     container:{
         flex: 1,
         paddingHorizontal: wp(5),
+        mingHeight: '100%',
     },
 
     heading:{
-        flexDirection: "row",
-        // backgroundColor: "green",
-        alignItems: "center",
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: wp(5),
+
     },
 
-    headingText:{
-        fontSize: hp(4.5),
+    titleHeading: {
+        fontSize: hp(3.1),
         color: theme.colors.primary,
         fontWeight: theme.fonts.bold,
-        flex: 1,
     },
 
-    valueHeading: {
-        paddingVertical: hp(2), 
+    backButtonContainer: {
+        // center the back button
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 
-    valueHeadingTop:{
+    subHeading:{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: hp(2),
+    },
+
+    valueContainer:{
+
+    },
+
+    valueBottom:{
         flexDirection: 'row',
         gap: wp(1.5),
     },
 
-    allAccounts:{
-        color: theme.colors.primary,
-        fontWeight: theme.colors.bold,
+    addButton:{
+        height: hp(4.5),
+        backgroundColor: 'transparent',
     },
 
-    totalAsset:{
-        color: theme.colors.textLight,
-        
-    },
-
-    valueProfitLoss:{
-        color: theme.colors.textLight,
-    },
-
-    values: {
-        color: theme.colors.primary,
+    portfolioValue:{
         fontSize: hp(4),
+        color: theme.colors.primary,
         fontWeight: theme.fonts.bold,
     },
 
-    valueChange: {
-        color: theme.sentimentColor.positive,
+    portfolioChange:{
         fontSize: hp(2),
         fontWeight: theme.fonts.medium,
     },
 
-    portfolioContainer:{
-        backgroundColor: "#1a1a1a",
+    pieChartContainer:{
+        flex: 1,
+        // backgroundColor: 'red',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    // Assets list section
+    assetListContainer:{
+        backgroundColor: theme.colors.secondaryBg,
         paddingVertical: hp(1),
         marginHorizontal: wp(-5),
         padding: wp(3.5),
         gap: hp(1.2),
         flex: 1,
+        flexGrow: 1,
     },
 
-    portfolioHeading: {
-        // width: "100%",
-        // flex: 1,
-        justifyContent: "flex-end",
-        // backgroundColor: "red",
+    assetsSectionHeading:{
+        // justifyContent: "flex-end",
         flexDirection: "row",
-        alignItems: "center",
+        // alignItems: "center",
         paddingVertical: hp(1),
         paddingHorizontal: hp(1.5),
-        // backgroundColor: "red",
+
+        // backgroundColor : 'red'
     },
 
-    portfolioText:{
-        // backgroundColor: "green",
+    assetsTitle:{
         fontSize: hp(3),
         fontWeight: theme.fonts.medium,
         color: theme.colors.primary,
@@ -136,126 +477,75 @@ const styles = StyleSheet.create({
         fontWeight: theme.fonts.medium,
     },
 
-    portfolioHeadingOptions:{
-        flexDirection: "row",
-        gap: wp(3),
-    },
-
-
-    addButton:{
-        // padding: hp(1),
-        backgroundColor: "transparent",
-        height: hp(4.5),
-    },
-
-    addText:{
-        color: theme.colors.textLight,
-        fontWeight: theme.fonts.normal,
-    },
-
-    editButton:{
-        // padding: hp(1),
-        backgroundColor: "transparent",
-        height: hp(4.5),
-    },
-
-    editText:{
-        color: theme.colors.textLight,
-        fontWeight: theme.fonts.normal,
-    }, 
-
-    portfolioList:{
-        // backgroundColor: "red",
+    // Asset list section
+    assetList: {
         gap: hp(1),
     },
 
-    portfolio:{
-        // backgroundColor: "blue",
-        // fontWeight: theme.fonfts.medium, 
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
+
+    asset:{
+        // alignItems: 'center',
         padding: hp(2.5),
         backgroundColor: theme.colors.background,
         borderRadius: hp(2),
-        
     },
 
-    portfolioLeft:{
-        // flexDirection: "row",
-        flex: 1,
-        // alignItems: "center",
-        // justifyContent: "center",
+    topAsset:{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: hp(0.5),
     },
 
-    portfolioName: {
+    row: {
+        flexDirection: 'row',
+        gap: wp(1.5),
+        alignItems: 'center',
+    },
+
+    assetSymbol: {
         fontWeight: theme.fonts.medium,
         fontSize: hp(2.25),
         color: theme.colors.primary,
     },
 
-    portfolioBottom: {
-        flexDirection: "row",
-        gap: wp(2),
-    },
-
-    portfolioValue: {
-        // backgroundColor: "blue",
-        alignSelf: "center",
+    currentAssetPrice: {
+        fontSize: hp(1.5),
         color: theme.colors.textLight,
     },
     
-    portfolioChange: {
-        // backgroundColor: "green",
-        alignSelf: "flex-start",
+    subHeadingAsset: {
+        color: theme.colors.textLight,
+        fontSize: hp(1.5),
     },
 
-    portfolioOptions:{
-        flex: 1,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "flex-end",
-        gap: wp(5),
+    assetValue: {
+        color: theme.colors.primary,
+        fontSize: hp(1.5),
     },
 
-    positiveChange:{
-        color: theme.sentimentColor.positive,
+    rowBottom: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
     },
 
-    negativeChange:{
-        color: theme.sentimentColor.negative,
-    },
-    
-    neutralChange:{
-        color: theme.sentimentColor.neutral,
-    },
-
-    renameButton:{
-        backgroundColor: "transparent",
+    sellButton:{
+        backgroundColor: theme.sentimentColor.negative,
         height: hp(4),
-    },
-    
-    deleteButton:{
-        height: hp(4),
-        backgroundColor: "transparent",
-
-    },
-    
-    saveButton:{
-        backgroundColor: theme.colors.primary,
-        height: hp(4.5),
         paddingVertical: hp(1),
-        paddingHorizontal: hp(2),
-        // borderRadius: 50,
+        paddingHorizontal: wp(3),
+        position: 'absolute',
+
+        bottom: hp(2.5),
+        right: hp(2.5),
+    },
+
+    sellButtonText:{
+        color: theme.colors.primary,
+        fontSize: hp(1.5),
+        fontWeight: theme.fonts.medium,
     },
     
-    saveText:{
-        fontWeight: theme.fonts.normal,
-        color: theme.colors.inputBg,
-        fontSize: hp(1.9),
-
-    },
-
 });
 
 
