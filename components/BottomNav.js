@@ -19,15 +19,15 @@ const BottomNav = () => {
       />,
       path: '/home'
     },
-    {
-      name: 'Search',
-      icon: (isActive) => <Ionicons 
-        name={isActive ? "search" : "search-outline"} 
-        size={24} 
-        color={isActive ? theme.colors.secondary : theme.colors.textLight} 
-      />,
-      path: '/search'
-    },
+    // {
+    //   name: 'Search',
+    //   icon: (isActive) => <Ionicons 
+    //     name={isActive ? "search" : "search-outline"} 
+    //     size={24} 
+    //     color={isActive ? theme.colors.secondary : theme.colors.textLight} 
+    //   />,
+    //   path: '/search'
+    // },
     {
       name: 'My Assets',
       icon: (isActive) => <Ionicons 

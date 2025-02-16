@@ -133,7 +133,7 @@ EXECUTE FUNCTION update_portfolio_valuations();
 
 -- Change the amount in portfolio_asset to 10 decimal places (handle buy bitcoin small)
 ALTER TABLE portfolio_assets
-ALTER COLUMN amount TYPE DECIMAL(15, 10);
+ALTER COLUMN amount TYPE FLOAT;
 
 
 

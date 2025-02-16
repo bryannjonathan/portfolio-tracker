@@ -27,7 +27,7 @@ const Portfolio = () => {
 
     // Fetch portfolios
     const fetchPortfolios = async () => {
-        console.log(`userId: ${userId}`)
+        // console.log(`userId: ${userId}`)
         
         // const response = await axios.get(`http://10.0.2.2:3000/api/portfolios`, { userId })
         const response = await axios.get(`${url}/${userId}`);
@@ -54,7 +54,7 @@ const Portfolio = () => {
     }, [router.params])
     
 
-    console.log('portfolioData:', portfolioData);
+    // console.log('portfolioData:', portfolioData);
 
     // Get culmulative data
     const [totalBaseValue, setTotalBaseValue] = useState(0)
@@ -63,20 +63,18 @@ const Portfolio = () => {
     const [percentChange, setPercentChange] = useState(0)
 
     useEffect(() => {
-        console.log('LOG: Enter use Effect')
+        // console.log('LOG: Enter use Effect')
         if (portfolioData &&!isLoading && !isFetching){
-            console.log('LOG: Enter useEffect if statement')
+            // console.log('LOG: Enter useEffect if statement')
 
-            console.log(`LOG: portfolioData.total: ${portfolioData.total}`)
-            
-            
+            // console.log(`LOG: portfolioData.total: ${portfolioData.total}`)
 
             let totalBaseValue = 0;
             let totalCurrValue = 0;
 
             for (let i = 0; i < portfolioData.total; i++){
 
-                console.log(`LOG: current portfolio: ${portfolioData.data[i].name}; base investment: ${portfolioData.data[i].base_investment}, total current value: ${portfolioData.data[i].current_valuation}`)
+                // console.log(`LOG: current portfolio: ${portfolioData.data[i].name}; base investment: ${portfolioData.data[i].base_investment}, total current value: ${portfolioData.data[i].current_valuation}`)
 
                 totalBaseValue += parseFloat(portfolioData.data[i].base_investment);
                 totalCurrValue += parseFloat(portfolioData.data[i].current_valuation);
@@ -85,8 +83,8 @@ const Portfolio = () => {
             let percentChange = 0;
             let change = 0;
 
-            console.log(`Final base value: ${totalBaseValue}`)
-            console.log(`Final current valuation: ${totalCurrValue}`)
+            // console.log(`Final base value: ${totalBaseValue}`)
+            // console.log(`Final current valuation: ${totalCurrValue}`)
 
             if (totalBaseValue > 0) {
                 change = totalCurrValue - totalBaseValue
@@ -157,7 +155,7 @@ const Portfolio = () => {
             }
         }
 
-        console.log(`LOG: for ${change}, isPercent:${isPercent} j --> color: ${color} backgroundColor: ${backgroundColor}`)
+        // console.log(`LOG: for ${change}, isPercent:${isPercent} j --> color: ${color} backgroundColor: ${backgroundColor}`)
         
         return({
             color: color,
@@ -172,6 +170,20 @@ const Portfolio = () => {
         setTimeout(() => {
             setRefreshing(false);
         }, 2000);
+    }
+
+    const handleDeleteButton = async(portfolioId) => {
+        console.log('Trying to delete portfolio', portfolioId)
+        try{
+            await axios.delete(`${url}/${portfolioId}`)
+            console.log('SUCCESS')
+            setIsEdit(false)
+            refetch();
+        } catch (error){
+            // console.error('Error deleting portfoio', error);
+            console.log('Error deleting portfolio:', error)
+            alert('Failed to delete portfolio. Please try again.')
+        }
     }
 
 
@@ -208,7 +220,7 @@ const Portfolio = () => {
                                 icon={<AntDesign name="delete" size={hp(2.5)} color={theme.colors.primary}/>}
                                 buttonStyle={styles.deleteButton}
                                 textStyle={styles.deleteText}
-                                onPress={() => {}}
+                                onPress={() => {handleDeleteButton(item.portfolio_id)}}
                             />
                         )}
 

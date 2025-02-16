@@ -5,7 +5,6 @@ import Button from '../../components/Button';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import Entypo from '@expo/vector-icons/Entypo';
-import Feather from '@expo/vector-icons/Feather';
 import { useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -13,9 +12,11 @@ import axios from 'axios';
 import Loading from '../../components/Loading';
 import BackButton from '../../components/BackButton';
 import { PieChart } from 'react-native-chart-kit'; 
-import { getTextOfJSDocComment } from 'typescript';
+import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
+import OptionButton from '../../components/OptionButton';
+import { Provider } from 'react-native-paper';
 
-const PortfolioDetail = () => {
+const Portfolio = () => {
     const router = useRouter();
     const { portfolioId, name, baseInvestment, currentValuation, profitLoss, percentChange } = useLocalSearchParams();
 
@@ -278,21 +279,38 @@ const PortfolioDetail = () => {
         </ScreenWrapper>
     }
 
+    // For the menu options button (three dots)
+    const options = [
+        {
+            title: 'Rename Portfolio',
+            onPress: () => {Alert.alert('Rename portfolio')}
+        },
+        {
+            title: 'Delete Portfolio',
+            onPress: () => {Alert.alert('Delete portfolio')}
+        }
+    ]
+
+    // TODO: if assets not long enough, asset container doesn't grow until bottom.
     return(
+        <Provider>
+
             <ScreenWrapper bg={theme.colors.background}>
                 <ScrollView
                     // contentContainerStyle={ { flexGrow : 1 } }
                 >
                 <View style={styles.container}>
                     <View style={styles.heading}>
-                        <View style={styles.backButtonContainer}>
-                            <BackButton 
-                                router={router}
-                            />
+                        <View style={styles.headingLeft}>
+                            <View style={styles.backButtonContainer}>
+                                <BackButton 
+                                    router={router}
+                                />
+                            </View>
+                            <Text style={styles.titleHeading}>{name}</Text>
                         </View>
-                        <Text style={styles.titleHeading}>{name}</Text>
+                        <OptionButton options={options}/>
                     </View>
-
                     <View style={styles.subHeading}>
                         <View style={styles.valueContainer}>
                             <Text style={styles.portfolioValue}>${formatNumber(currentValuation)}</Text>
@@ -378,10 +396,12 @@ const PortfolioDetail = () => {
                 </View>
                 </ScrollView>
             </ScreenWrapper>
+        </Provider>
 
     )
     
 }
+export default Portfolio; 
 
 const styles = StyleSheet.create({
     container:{
@@ -393,8 +413,16 @@ const styles = StyleSheet.create({
     heading:{
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
+        // backgroundColor: 'red',
         gap: wp(5),
 
+    },
+
+    headingLeft:{
+        gap: wp(5),
+        flexDirection: 'row',
+        alignItems: 'center',
     },
 
     titleHeading: {
@@ -414,6 +442,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         marginTop: hp(2),
+    },
+
+    // edit button style
+    editButton:{
+        // padding: hp(1),
+        backgroundColor: "transparent",
+        height: hp(4.5),
     },
 
     valueContainer:{
@@ -545,9 +580,9 @@ const styles = StyleSheet.create({
         fontSize: hp(1.5),
         fontWeight: theme.fonts.medium,
     },
+
     
 });
 
 
-export default PortfolioDetail;
 
