@@ -1,4 +1,4 @@
-import { Dimensions, View, Text, StyleSheet, RefreshControl, FlatList, ScrollView, TouchableOpacity } from 'react-native';
+import { Dimensions, View, Text, StyleSheet, RefreshControl, FlatList, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { theme } from '../../asset/theme';
 import { wp, hp } from '../../helpers/common';
 import Button from '../../components/Button';
@@ -174,16 +174,36 @@ const Portfolio = () => {
 
     const handleDeleteButton = async(portfolioId) => {
         console.log('Trying to delete portfolio', portfolioId)
-        try{
-            await axios.delete(`${url}/${portfolioId}`)
-            console.log('SUCCESS')
-            setIsEdit(false)
-            refetch();
-        } catch (error){
-            // console.error('Error deleting portfoio', error);
-            console.log('Error deleting portfolio:', error)
-            alert('Failed to delete portfolio. Please try again.')
-        }
+
+        Alert.alert(
+            'Confirm Deletion',
+            'Are you sure you want to delete this portfolio?',
+            [
+                {
+                    text: 'Cancel',
+                    onPress: () => console.log('LOG: Delete portfolio cancelled'),
+                    style: 'cancel',
+                }, 
+                {
+                    text: 'OK',
+                    onPress: async () => {
+                        try{
+                            await axios.delete(`${url}/${portfolioId}`)
+                            console.log('SUCCESS')
+                            setIsEdit(false)
+                            refetch();
+                        } catch (error){
+                            // console.error('Error deleting portfoio', error);
+                            console.log('Error deleting portfolio:', error)
+                            alert('Failed to delete portfolio. Please try again.')
+                        }
+                    }
+
+                }
+            ],
+            { cancelable: false }
+        )
+
     }
 
 

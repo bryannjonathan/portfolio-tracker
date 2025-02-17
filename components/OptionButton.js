@@ -41,7 +41,7 @@ const OptionsButton = ({options}) => {
                                     closeMenu();
                                     option.onPress();
                                 }} 
-                                title={option.title}
+                                title={<Text>{option.title}</Text>}
                             />
                             // Add divided except for the last item
                             {index < options.length - 1 && <Divider />} 

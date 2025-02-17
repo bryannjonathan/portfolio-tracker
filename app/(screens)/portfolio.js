@@ -1,4 +1,4 @@
-import { Dimensions, View, Text, StyleSheet, RefreshControl, FlatList, ScrollView } from 'react-native';
+import { Alert, View, Text, StyleSheet, RefreshControl, FlatList, ScrollView } from 'react-native';
 import { theme } from '../../asset/theme';
 import { wp, hp } from '../../helpers/common';
 import Button from '../../components/Button';
@@ -133,6 +133,44 @@ const Portfolio = () => {
 
     console.log('LOG: tickerData: ',tickerData)
     
+
+    // Handle delete portfolio
+    const handleDeleteButton = async(portfolioId) => {
+        console.log('Trying to delete portfolio', portfolioId)
+
+        Alert.alert(
+            'Confirm Deletion',
+            'Are you sure you want to delete this portfolio?',
+            [
+                {
+                    text: 'Cancel',
+                    onPress: () => console.log('LOG: Delete portfolio cancelled'),
+                    style: 'cancel',
+                }, 
+                {
+                    text: 'OK',
+                    onPress: async () => {
+                        try{
+                            await axios.delete(`http://10.0.2.2:3000/api/portfolios/${portfolioId}`)
+                            console.log('SUCCESS')
+
+                            router.replace({
+                                pathname: '/assets',
+                                params: { refetchFlag: true }
+                            })
+                        } catch (error){
+                            // console.error('Error deleting portfoio', error);
+                            console.log('Error deleting portfolio:', error)
+                            alert('Failed to delete portfolio. Please try again.')
+                        }
+                    }
+
+                }
+            ],
+            { cancelable: false }
+        )
+
+    }
     
 
     // Functiosn to format/style numbers
@@ -283,11 +321,13 @@ const Portfolio = () => {
     const options = [
         {
             title: 'Rename Portfolio',
-            onPress: () => {Alert.alert('Rename portfolio')}
+            onPress: () => {
+
+            }
         },
         {
             title: 'Delete Portfolio',
-            onPress: () => {Alert.alert('Delete portfolio')}
+            onPress: () => {handleDeleteButton(portfolioId)}
         }
     ]
 
