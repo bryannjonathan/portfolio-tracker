@@ -469,6 +469,51 @@ app.delete('/api/portfolios/:portfolioId', async(req,res) => {
 
 })
 
+/*
+ * PATCH /api/portfolios  
+ * Changes/update the name of the portfolio
+ * Receives the new name of the portfolio as the parameter
+ */
+app.patch('/api/portfolios/:portfolioId', async(req,res) => {
+    const { portfolioId } = req.params;
+    const { newName } = req.body;
+
+    console.log(`LOG: Trying to change ${portfolioId} name to ${newName}`)
+
+    if (!newName || newName.trim().length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: "New name is required.",
+        })
+    }
+
+    try{
+        const portfolio = await pool.query('SELECT * FROM portfolios WHERE portfolio_id = $1',[portfolioId])
+        console.log(portfolio)
+    
+        if(portfolio.rows.length === 0){
+            return res.status(404).json({
+                success: false,
+                message: "Portfolio not found.n"
+            })
+        }
+
+        await pool.query('UPDATE portfolios SET name = $1 WHERE portfolio_id = $2',[newName.trim(), portfolioId])
+
+        return res.status(200).json({
+            success: true,
+            message: "Portfolio name updated successfully."
+        })
+
+    } catch (error) {
+        console.error("Error updating portfolio name: ", error)
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        })
+    }
+})
+
 // API Test to return the sector of a stock
 app.get('/api/getSector/', async(req,res) => {
     console.log('Currently getting sector')

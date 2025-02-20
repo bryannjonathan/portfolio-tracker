@@ -1,4 +1,4 @@
-import { Alert, View, Text, StyleSheet, RefreshControl, FlatList, ScrollView } from 'react-native';
+import { Alert, View, Text, StyleSheet, TextInput, FlatList, ScrollView, Modal } from 'react-native';
 import { theme } from '../../asset/theme';
 import { wp, hp } from '../../helpers/common';
 import Button from '../../components/Button';
@@ -21,6 +21,10 @@ const Portfolio = () => {
     const { portfolioId, name, baseInvestment, currentValuation, profitLoss, percentChange } = useLocalSearchParams();
 
     const [isError, setIsError] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [newPortfolioName, setNewPortfolioName] = useState(name);
+    const [portfolioName, setPortfolioName] = useState(name);
+    const [modalLoading, setModalLoading] = useState(false);
 
     // Fetch the assets
     const url = `http://10.0.2.2:3000/api/assets`
@@ -171,7 +175,43 @@ const Portfolio = () => {
         )
 
     }
-    
+
+    // Handle rename portfolio
+    const handleRenameButton = () => {
+        setModalVisible(true);
+    }
+
+    const handleRenameConfirm = async(newName) => {
+        console.log(`LOG: Trying to rename ${portfolioId} to ${newName}`)
+
+        if(newName.trim()){
+            try{
+                setModalLoading(true);
+                const respond = await axios.patch(`http://10.0.2.2:3000/api/portfolios/${portfolioId}`,{ newName: newName })                
+            
+                setPortfolioName(newName);
+                setModalLoading(false)
+                setModalVisible(false);
+
+                Alert.alert('Success', 'Portfolio renamed successfully')
+
+            } catch (error) {
+                console.log('LOG: Error renaming portfolio', error)
+                setModalLoading(false);
+                setModalVisible(false);
+                Alert.alert('Error', 'Failed to rename portfolio. Please try again.')
+
+            }
+
+        } else {
+            Alert.alert('Error', 'Please enter a valid portfolio name')
+        }
+    }
+
+    const handleRenameCancel = () => {
+        setModalLoading(false);
+        setModalVisible(false);
+    }
 
     // Functiosn to format/style numbers
     // Format number to $1,000,000.00 format
@@ -321,9 +361,7 @@ const Portfolio = () => {
     const options = [
         {
             title: 'Rename Portfolio',
-            onPress: () => {
-
-            }
+            onPress: () => {handleRenameButton()}
         },
         {
             title: 'Delete Portfolio',
@@ -334,7 +372,6 @@ const Portfolio = () => {
     // TODO: if assets not long enough, asset container doesn't grow until bottom.
     return(
         <Provider>
-
             <ScreenWrapper bg={theme.colors.background}>
                 <ScrollView
                     // contentContainerStyle={ { flexGrow : 1 } }
@@ -347,7 +384,7 @@ const Portfolio = () => {
                                     router={router}
                                 />
                             </View>
-                            <Text style={styles.titleHeading}>{name}</Text>
+                            <Text style={styles.titleHeading}>{portfolioName}</Text>
                         </View>
                         <OptionButton options={options}/>
                     </View>
@@ -408,6 +445,38 @@ const Portfolio = () => {
                             />
                         )}
                     </View>
+
+                    {/* Modal for Renaming Portfolio */}
+                    <Modal
+                        visible={modalVisible}
+                        onRequestClose={handleRenameCancel}
+                        transparent={true}
+                        animationType="slide"
+                    >
+                        <View style={styles.modalOverlay}>
+                            <View style={styles.modalContent}>
+                                <Text style={styles.modalTitle}>Rename Your Portfolio</Text>
+
+                                {/* Text input for new portfolio name */}
+                                <TextInput 
+                                    style={styles.modalInput}
+                                    placeholder={"Enter new portfolio name"}
+                                    value={newPortfolioName}
+                                    onChangeText={(text) => setNewPortfolioName(text)}
+                                />
+
+                                {/* Buttons to confirm or cancel */}
+                                <View style={styles.modalButtonContainer}>
+                                    <Button title={"Cancel"} style={styles.modalButton} onPress={handleRenameCancel}/>
+                                    <Button title={"Rename"} style={styles.modalButton} onPress={() => handleRenameConfirm(newPortfolioName)} loading={modalLoading}/>
+                                </View>
+
+
+                            </View>
+                        </View>
+                    </Modal>
+
+
 
                     {/* Asset list */}
                     <View style={styles.assetListContainer}>
@@ -621,8 +690,42 @@ const styles = StyleSheet.create({
         fontWeight: theme.fonts.medium,
     },
 
-    
+    // Modal Styles
+    modalOverlay:{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        // backgroundColor: theme.colors.background
+    },
+
+    modalContent:{
+        width: wp(80),
+        padding: 20,
+        backgroundColor: theme.colors.primary,
+        borderRadius: 10,
+    },
+
+    modalTitle:{
+        fontSize: hp(2.5),
+        fontWeight: theme.fonts.bold,
+        marginBottom: hp(1),
+    },
+
+    modalInput:{
+        height: hp(5),
+        borderColor: theme.colors.secondary,
+        borderWidth: 1,
+        marginBottom: 15,
+        paddingLeft: 8,
+    },
+
+    modalButtonContainer:{
+        // flexDirection: 'row',
+        // justifyContent: 'space-between',
+        gap: hp(2),
+    },
+
+    modalButton:{
+        height: hp(3.5),
+    },
 });
-
-
-
