@@ -2,7 +2,6 @@ import { Alert, View, Text, StyleSheet, TextInput, FlatList, ScrollView, Modal }
 import { theme } from '../../asset/theme';
 import { wp, hp } from '../../helpers/common';
 import Button from '../../components/Button';
-import AntDesign from '@expo/vector-icons/AntDesign';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import Entypo from '@expo/vector-icons/Entypo';
 import { useState, useEffect } from 'react';
@@ -12,9 +11,9 @@ import axios from 'axios';
 import Loading from '../../components/Loading';
 import BackButton from '../../components/BackButton';
 import { PieChart } from 'react-native-chart-kit'; 
-import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
 import OptionButton from '../../components/OptionButton';
 import { Provider } from 'react-native-paper';
+import Input from '../../components/Input';
 
 const Portfolio = () => {
     const router = useRouter();
@@ -206,11 +205,14 @@ const Portfolio = () => {
         } else {
             Alert.alert('Error', 'Please enter a valid portfolio name')
         }
+
+        setNewPortfolioName(portfolioName);
     }
 
     const handleRenameCancel = () => {
         setModalLoading(false);
         setModalVisible(false);
+        setNewPortfolioName(portfolioName);
     }
 
     // Functiosn to format/style numbers
@@ -451,24 +453,30 @@ const Portfolio = () => {
                         visible={modalVisible}
                         onRequestClose={handleRenameCancel}
                         transparent={true}
-                        animationType="slide"
+                        animationType="fade"
                     >
                         <View style={styles.modalOverlay}>
                             <View style={styles.modalContent}>
                                 <Text style={styles.modalTitle}>Rename Your Portfolio</Text>
 
                                 {/* Text input for new portfolio name */}
-                                <TextInput 
+                                {/* <TextInput 
                                     style={styles.modalInput}
                                     placeholder={"Enter new portfolio name"}
                                     value={newPortfolioName}
                                     onChangeText={(text) => setNewPortfolioName(text)}
+                                /> */}
+                                <Input 
+                                    placeholder={"Enter new portfolio name"}
+                                    value={newPortfolioName}
+                                    onChangeText={(text) => setNewPortfolioName(text)}
+                                    containerStyles={styles.modalInput}  
                                 />
 
                                 {/* Buttons to confirm or cancel */}
                                 <View style={styles.modalButtonContainer}>
-                                    <Button title={"Cancel"} style={styles.modalButton} onPress={handleRenameCancel}/>
-                                    <Button title={"Rename"} style={styles.modalButton} onPress={() => handleRenameConfirm(newPortfolioName)} loading={modalLoading}/>
+                                    <Button title={"Cancel"} textStyle={styles.modalText} buttonStyle={[styles.modalButton, styles.cancelButton]} onPress={handleRenameCancel}/>
+                                    <Button title={"Rename"} textStyle={styles.modalText} buttonStyle={styles.modalButton} onPress={() => handleRenameConfirm(newPortfolioName)} loading={modalLoading}/>
                                 </View>
 
 
@@ -696,36 +704,56 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         // backgroundColor: theme.colors.background
+        //semi transparent background:
+        backgroundColor: 'rgba(10, 10, 10, 0.75)',
     },
 
     modalContent:{
         width: wp(80),
         padding: 20,
-        backgroundColor: theme.colors.primary,
+        backgroundColor: theme.colors.secondaryBg,
         borderRadius: 10,
+        gap: hp(1.25),
+
+        // borderColor: theme.colors.secondary,
+        // borderWidth: 1,
     },
 
     modalTitle:{
         fontSize: hp(2.5),
         fontWeight: theme.fonts.bold,
-        marginBottom: hp(1),
+        color: theme.colors.primary,
+        // marginBottom: hp(1),
     },
 
     modalInput:{
-        height: hp(5),
-        borderColor: theme.colors.secondary,
-        borderWidth: 1,
-        marginBottom: 15,
-        paddingLeft: 8,
+        // height: hp(5),
+        // borderColor: theme.colors.secondary,
+        // borderWidth: 1,
+        // marginBottom: 15,
+        // paddingLeft: 8,
     },
 
     modalButtonContainer:{
-        // flexDirection: 'row',
-        // justifyContent: 'space-between',
-        gap: hp(2),
+        flexDirection: 'row',
+        justifyContent: 'space-evenly',
+        gap: wp(3),
     },
 
     modalButton:{
-        height: hp(3.5),
+        flex: 1,
+        height: hp(5),
+        // width: '100%',
+    },
+    
+    modalText:{
+        color: theme.colors.primary,
+        fontWeight: theme.fonts.medium,
+    },
+
+    cancelButton:{
+        backgroundColor: 'transparent',
+        borderColor: theme.colors.secondary,
+        borderWidth: 1,
     },
 });

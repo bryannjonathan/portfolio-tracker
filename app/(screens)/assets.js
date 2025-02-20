@@ -1,4 +1,5 @@
 import { Dimensions, View, Text, StyleSheet, RefreshControl, FlatList, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React from 'react';
 import { theme } from '../../asset/theme';
 import { wp, hp } from '../../helpers/common';
 import Button from '../../components/Button';
@@ -33,6 +34,13 @@ const Portfolio = () => {
         const response = await axios.get(`${url}/${userId}`);
         return response.data
     }
+
+    // Refetch when screen is focused
+    useFocusEffect(
+        React.useCallback(() => {
+            refetch()
+        }, [])
+    )
 
     // React query
     const {
