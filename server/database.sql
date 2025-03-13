@@ -135,6 +135,21 @@ EXECUTE FUNCTION update_portfolio_valuations();
 ALTER TABLE portfolio_assets
 ALTER COLUMN amount TYPE FLOAT;
 
+-- Change the schema in transactions to use asset_id instead
+ALTER TABLE transactions ADD COLUMN asset_id integer;
+
+UPDATE transactions
+SET asset_id = assets.asset_id
+FROM assets
+WHERE transactions.ticker = assets.symbol;
+
+ALTER TABLE transactions 
+ADD CONSTRAINT transactions_asset_id_fkey
+FOREIGN KEY (asset_id) REFERENCES assets(asset_id) ON DELETE CASCADE;
+
+ALTER TABLE transactions DROP COLUMN ticker;
+ALTER TABLE transactions DROP COLUMN ticker_name;
+
 
 
 

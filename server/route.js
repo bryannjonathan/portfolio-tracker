@@ -656,7 +656,10 @@ app.post('/api/purchase_asset', async(req, res) => {
         }
 
         // Log the transaction
-        const transactionRes = await pool.query('INSERT INTO transactions (portfolio_id, ticker, ticker_name, transaction_type, quantity, total_value, currency, transaction_date) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW()) RETURNING transaction_id;', [portfolioId, ticker, name, 'buy', quantity, totalVal, 'USD'])
+        const transactionRes = await pool.query(
+            'INSERT INTO transactions (portfolio_id, asset_id, transaction_type, quantity, total_value, currency, transaction_date) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW()) RETURNING transaction_id;', 
+            [portfolioId, asset_id, name, 'buy', quantity, totalVal, 'USD']
+        )
 
         // Update the portfolios' base investment
         await pool.query(
