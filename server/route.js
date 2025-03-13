@@ -737,5 +737,89 @@ app.get('/api/getCryptoPrice', async(req, res) => {
     
 })
 
+/* 
+* 
+*/
+app.post('/api/sell_asset', async(req, res) => {
+    const { portfolioId, assetId, quantity, sellPrice } = req.query;
+
+    console.log(`LOG: Trying to sell ${quantity} ${assetId} at $${sellPrice} each for portfolio ${portfolioId}`);
+
+    if (!portfolioId || !assetId || !quantity || !sellPrice){
+        return res.status(400).json({
+            error: "Missing required fields."
+        })
+    }
+
+    try{
+        await pool.query('BEGIN');
+
+        const assetCheck = await pool.query(
+            `SELECT * FROM portfolio_assets WHERE portfolioId = $1 AND asset_id = $2`,
+            [portfolioId, assetId]
+        )
+
+        const { amount, average_buy_price } = assetCheck.rows[0];
+
+        // Update portfolio_assets table
+        const newAmount = amount - quantity;
+        if (newAmount == 0){
+            // delete the asset from the portfolio
+            await pool.query(
+                `DELETE FROM portfolio_assets WHERE portfolioId = $1 AND assetId = $2`,
+                [portfolioId, assetId]
+            );
+        } else {
+            // new amount is not 0
+            await pool.query(
+                `UPDATE portfolio_assets SET amount = $1 WHERE portfolioId = $3 AND assetId = $4`,
+                [newAmount, portfolioId, assetId]
+            )
+        }
+
+        // Update data in portfolios table
+
+        // fetch current price of that stock
+        const currentPrice = await pool.query(
+            `SELECT current_price FROM assets WHERE asset_id = $1`,
+            [assetId]
+        )
+
+        await pool.query(
+            `UPDATE portfolios 
+            SET base_investment = base_investment - $1,
+            current_valuation = current_valuation - $2,
+            WHERE portfolio_id = $3`,
+            [quantity * average_buy_price, quantity * currentPrice, portfolioId]
+        )
+        
+        // Add SELL to transaction
+        await pool.query(
+            `INSER INTO transactions (portfolio_id, asset_id, transaction_type, quantity, total_value, currency)
+            VALUES ($1, $2, $3, $4, $5, $6)`,
+            [portfolioId, assetId, 'sell', quantity, (quantity * sellPrice), 'USD']
+        );
+
+        await pool.query("COMMIT");
+
+        res.status(200).json({
+            message: "Asset sold successfully",
+        })
+
+    } catch (error){
+        await pool.query("ROLLBACK");
+        console.error(error);
+
+        res.status(500).json({
+            message: "Internal server error",
+        })
+    }
+
+    
+
+})
+
+
+
 
 module.exports = app;
