@@ -1,27 +1,27 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, Modal } from 'react-native';
 
 import Button from './Button';
 import { hp,wp } from '../helpers/common';
 import { theme } from '../asset/theme';
 
 
-const Modal = ({ isVisible, onClose, title, content, onConfirm, onCancel }) => {
+const ReusableModal = ({ isVisible, onClose, title, children, onConfirm, onCancel }) => {
 
     return (
         <Modal
             visible={isVisible} 
             onRequestClose={onCancel}
             transparent={true}
-            animation={fade}
+            animationType={"fade"}
         >
             <View style={styles.modalOverlay}>
                 <View style={styles.container}>
                     <Text style={styles.modalTitle}>{title}</Text>
-                    <View style={styles.modalContent}>{content}</View>
+                    <View style={styles.modalContent}>{children}</View>
                     <View style={styles.buttonContainer}>
-                        <Button title="Confirm" textStyle={styles.modalText} buttonStyle={[styles.modalButton, styles.cancelButton]} onPress={onConfirm} />
-                        <Button title="Cancel" textStyle={styles.modalText} buttonStyle={styles.modalButton} onPress={onCancel} />
+                        <Button title="Cancel" textStyle={styles.modalText} buttonStyle={[styles.modalButton, styles.cancelButton]} onPress={onCancel} />
+                        <Button title="Confirm" textStyle={styles.modalText} buttonStyle={styles.modalButton} onPress={onConfirm} />
                     </View>
                 </View>
             </View>
@@ -29,7 +29,7 @@ const Modal = ({ isVisible, onClose, title, content, onConfirm, onCancel }) => {
     )
 };
 
-export default Modal;
+export default ReusableModal;
 
 const styles = StyleSheet.create({
     modalOverlay:{

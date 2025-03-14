@@ -1,4 +1,4 @@
-import { Alert, View, Text, StyleSheet, TextInput, FlatList, ScrollView, Modal } from 'react-native';
+import { Alert, View, Text, StyleSheet, TextInput, FlatList, ScrollView } from 'react-native';
 import { theme } from '../../asset/theme';
 import { wp, hp } from '../../helpers/common';
 import Button from '../../components/Button';
@@ -14,6 +14,7 @@ import { PieChart } from 'react-native-chart-kit';
 import OptionButton from '../../components/OptionButton';
 import { Provider } from 'react-native-paper';
 import Input from '../../components/Input';
+import ReusableModal from '../../components/Modal';
 
 const Portfolio = () => {
     const router = useRouter();
@@ -278,6 +279,11 @@ const Portfolio = () => {
 
     }
 
+    // handle selling asset button
+    const sellAsset = () => {
+
+    }
+
     const renderAsset = ({item}) => {
         const totalValue = parseFloat(item.amount) * parseFloat(item.current_price);
         // console.log(item.percent_change);
@@ -449,40 +455,22 @@ const Portfolio = () => {
                     </View>
 
                     {/* Modal for Renaming Portfolio */}
-                    <Modal
-                        visible={modalVisible}
-                        onRequestClose={handleRenameCancel}
-                        transparent={true}
-                        animationType="fade"
+                    <ReusableModal
+                        isVisible={modalVisible}
+                        title={"Rename Your Portfolio"}
+                        onCancel={handleRenameCancel}
+                        onConfirm={() => handleRenameConfirm(newPortfolioName)}
                     >
-                        <View style={styles.modalOverlay}>
-                            <View style={styles.modalContent}>
-                                <Text style={styles.modalTitle}>Rename Your Portfolio</Text>
-
-                                {/* Text input for new portfolio name */}
-                                {/* <TextInput 
-                                    style={styles.modalInput}
-                                    placeholder={"Enter new portfolio name"}
-                                    value={newPortfolioName}
-                                    onChangeText={(text) => setNewPortfolioName(text)}
-                                /> */}
-                                <Input 
-                                    placeholder={"Enter new portfolio name"}
-                                    value={newPortfolioName}
-                                    onChangeText={(text) => setNewPortfolioName(text)}
-                                    containerStyles={styles.modalInput}  
-                                />
-
-                                {/* Buttons to confirm or cancel */}
-                                <View style={styles.modalButtonContainer}>
-                                    <Button title={"Cancel"} textStyle={styles.modalText} buttonStyle={[styles.modalButton, styles.cancelButton]} onPress={handleRenameCancel}/>
-                                    <Button title={"Rename"} textStyle={styles.modalText} buttonStyle={styles.modalButton} onPress={() => handleRenameConfirm(newPortfolioName)} loading={modalLoading}/>
-                                </View>
+                        <Input 
+                            placeholder={"Enter new portfolio name..."}
+                            value={newPortfolioName}
+                            onChangeText={(text) => setNewPortfolioName(text)}
+                        />
+                    </ReusableModal>
 
 
-                            </View>
-                        </View>
-                    </Modal>
+                    {/* Modal for Selling Asset */}
+
 
 
 
