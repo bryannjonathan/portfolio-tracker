@@ -61,7 +61,7 @@ const Portfolio = () => {
     })
 
     const assets = assetRes?.data || [];
-    console.log('LOG: assets: ', assets)
+    // console.log('LOG: assets: ', assets)
 
 
     // Refetch assets list when flag is true
@@ -72,7 +72,7 @@ const Portfolio = () => {
         }
     }, [router.params?.refetchFlag])
 
-    console.log('LOG: assets: ', assets)
+    // console.log('LOG: assets: ', assets)
 
 
 
@@ -83,7 +83,7 @@ const Portfolio = () => {
         const currentPrice = parseFloat(asset.current_price);
 
         if(!isNaN(amount) && !isNaN(currentPrice)){
-            console.log(asset.sector)
+            // console.log(asset.sector)
             acc[asset.sector] = (acc[asset.sector] || 0) + (amount * currentPrice)
         }
 
@@ -96,14 +96,14 @@ const Portfolio = () => {
         const currentPrice = parseFloat(asset.current_price);
 
         if(!isNaN(amount) && !isNaN(currentPrice)){
-            console.log(asset.symbol)
+            // console.log(asset.symbol)
             acc[asset.symbol] = (acc[asset.symbol] || 0) + (amount * currentPrice)
         }
 
         return acc;
     }, {});
 
-    console.log('LOG: final acc', tickerDistribution)
+    // console.log('LOG: final acc', tickerDistribution)
 
     // Assing colors to sectors based on their order
     const tickerColorMap = {};
@@ -135,7 +135,7 @@ const Portfolio = () => {
         legendFontSize: hp(1.5),
     }))
 
-    console.log('LOG: tickerData: ',tickerData)
+    // console.log('LOG: tickerData: ',tickerData)
     
 
     // Handle delete portfolio
@@ -293,11 +293,11 @@ const Portfolio = () => {
 
     // render each asset
     const renderAsset = ({item}) => {
+        // console.log(item)
+
         const totalValue = parseFloat(item.amount) * parseFloat(item.current_price);
-        // console.log(item.percent_change);
         const profitLoss = totalValue - (parseFloat(item.average_buy_price) * parseFloat(item.amount));
         const percentChange = ( profitLoss / parseFloat(item.average_buy_price)) * 100;
-        // console.log(percentChange)
         return(
             <View style={styles.asset}>
                 <View style={styles.topAsset}>
@@ -344,6 +344,11 @@ const Portfolio = () => {
                         pathname: '/sellAsset',
                         params: {
                             portfolioId: portfolioId,
+                            ticker: item.asset_type === "stock" ? item.symbol : item.crypto_id,
+                            name: item.name,
+                            amount: item.amount,
+                            lastPrice: item.current_price,
+                            asset_id: item.asset_id,
                         },
                       })
                     }}

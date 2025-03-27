@@ -13,19 +13,32 @@ import Slider from '@react-native-community/slider';
 const SellAsset = () => {
     const router = useRouter();
     
-    const { portfolioId, type, ticker, name, cryptoId }  = useLocalSearchParams()
+    const { portfolioId, ticker, name, amount, lastPrice, asset_id }  = useLocalSearchParams()
 
-    const [amount, setAmount] = useState(0)
-    const [price, setPrice] = useState(0.0)
+    const [price, setPrice] = useState(lastPrice)
     const [total, setTotal] = useState(0)
+    const [sliderValue, setSliderValue] = useState(0);
+    const [sellAmount, setSellAmount] = useState(0);
+
+    const numericAmount = parseFloat(amount || '0');
+
+    useEffect(() => {
+        if (numericAmount > 0){
+            const newSellAmount = (sliderValue / 100) * numericAmount;
+            setSellAmount(newSellAmount.toFixed(4));
+            setTotal(newSellAmount * parseFloat(price || lastPrice || 0));
+        }
+    },[sliderValue])
     
 
-    console.log(`In buyAsset.js`)
-    console.log(`portfolioId: ${portfolioId}`)
-    console.log(`type: ${type}`)
-    console.log(`ticker: ${ticker}`)
-    console.log(`name: ${name}`)
-    console.log(`cryptoId: ${cryptoId}`)
+    // console.log(`In SellAsset.js
+    //     portfolioId: ${portfolioId},        
+    //     ticker: ${ticker},
+    //     name: ${name},
+    //     amount: ${amount},
+    //     last price: ${lastPrice},
+    //     asset_id: ${asset_id},
+    // `)
 
     const formatNumber = (number) => {
         return new Intl.NumberFormat('en-US', {
@@ -33,12 +46,6 @@ const SellAsset = () => {
             maximumFractionDigits: 2,
         }).format(number);
     }
-
-    useEffect(() => {
-        const calcTotal = Number(amount) * Number(price);
-        setTotal(calcTotal.toFixed(2))
-    }, [amount, price])
-
     
     const handleBuy = async() => {
     }
@@ -70,18 +77,46 @@ const SellAsset = () => {
                                         placeholder={"0"} 
                                         containerStyles={styles.inputContainer} 
                                         textStyle={styles.inputText}
-                                        onChangeText={(text) => setAmount(text)}
+                                        inputType={"number"}
+                                        value={sellAmount}
+                                        onChangeText={(text) => {
+                                            let numeric = parseFloat(text) || 0;
+                                            setSellAmount(numeric);
+
+                                            if (numericAmount > 0) {
+                                                const percent = (numeric / numericAmount) * 100;
+                                                setSliderValue(Math.min(100, Math.max(0, percent)))
+                                                setTotal(numeric * parseFloat(price || lastPrice || 0));
+                                            }
+                                        }}
                                     />
                                 </View>
 
                                 <View style={styles.inputRow}>
                                     <Text style={styles.inputTitle}>Average Price (USD)</Text>
                                     <Input 
-                                        placeholder={`$${formatNumber(0)}`} 
+                                        placeholder={lastPrice} 
                                         containerStyles={styles.inputContainer} 
                                         textStyle={styles.inputText}
+                                        value={price}
                                         onChangeText={(text) => setPrice(text)}
                                     />
+                                </View>
+
+                                <View style={styles.inputRow}>
+                                    {/* Slider */}
+                                    <Slider
+                                        style={{width: wp(75), height: 40}}
+                                        minimumValue={0}
+                                        step={1}
+                                        maximumValue={100}
+                                        minimumTrackTintColor={theme.colors.primary}
+                                        maximumTrackTintColor={theme.colors.primary}
+                                        thumbTintColor={theme.colors.secondary}
+                                        onValueChange={(value) => setSliderValue(value)}
+                                        // value={sliderValue}
+                                    />
+                                    <Text style={styles.inputTitle}>{sliderValue}%</Text>
                                 </View>
 
                                 <View style={styles.inputRow}>
@@ -91,17 +126,9 @@ const SellAsset = () => {
                             </View>
 
 
+
                         </View>
                     </View>
-
-                    {/* Slider */}
-                    <Slider
-                        style={{width: 200, height: 40}}
-                        minimumValue={0}
-                        maximumValue={1}
-                        minimumTrackTintColor="#FFFFFF"
-                        maximumTrackTintColor="#000000"
-                    />
 
                     {/* Sell Button */}
                     <View style={styles.footer}>

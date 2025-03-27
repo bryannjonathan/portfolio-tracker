@@ -20,7 +20,7 @@ const Input = (props) => {
         keyboardType = Platform.OS === "ios" ? "decimal-pad" : "numeric";
     }
 
-    console.log(`keyboardType = ${keyboardType}`)
+    // console.log(`keyboardType = ${keyboardType}`)
     
     const handleTextChange = (text) => {
         if (keyboardType === "number"){
