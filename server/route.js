@@ -657,8 +657,8 @@ app.post('/api/purchase_asset', async(req, res) => {
 
         // Log the transaction
         const transactionRes = await pool.query(
-            'INSERT INTO transactions (portfolio_id, asset_id, transaction_type, quantity, total_value, currency, transaction_date) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW()) RETURNING transaction_id;', 
-            [portfolioId, asset_id, name, 'buy', quantity, totalVal, 'USD']
+            'INSERT INTO transactions (portfolio_id, asset_id, transaction_type, quantity, total_value, currency, transaction_date) VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING transaction_id;', 
+            [portfolioId, asset_id, 'buy', quantity, totalVal, 'USD']
         )
 
         // Update the portfolios' base investment
@@ -787,10 +787,13 @@ app.post('/api/sell_asset', async(req, res) => {
         // Update data in portfolios table
 
         // fetch current price of that stock
-        const currentPrice = await pool.query(
+        const currentPriceRes = await pool.query(
             `SELECT current_price FROM assets WHERE asset_id = $1`,
             [assetId]
         )
+
+        const currentPrice = currentPriceRes.rows[0].current_price;
+        console.log(`DEBUG: ${currentPrice}`)
 
         await pool.query(
             `UPDATE portfolios 
