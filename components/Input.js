@@ -1,16 +1,57 @@
-import { StyleSheet, Text, View, TextInput } from 'react-native'
+import { StyleSheet, Text, View, TextInput, Platform } from 'react-native'
 import React from 'react'
 import { theme } from '../asset/theme'
 import { hp,wp } from '../helpers/common'
 
 const Input = (props) => {
+    const {
+        icon,
+        inputStyles,
+        containerStyles,
+        inputRef,
+        inputType = "default",
+        onChangeText,
+        value,
+        ...rest
+    } = props;
+
+    let keyboardType;
+    if (inputType === "number"){
+        keyboardType = Platform.OS === "ios" ? "decimal-pad" : "numeric";
+    }
+
+    console.log(`keyboardType = ${keyboardType}`)
+    
+    const handleTextChange = (text) => {
+        if (keyboardType === "number"){
+            let cleaned = text.replace(/[^0-9.]/g, '');
+            const dotCount = (cleaned.match(/\./g) || []).length;
+
+            if (dotCount > 1){
+                cleaned = cleaned.slice(0, cleaned.lastIndexOf('.'));
+            }
+
+            if (onChangeText){
+                onChangeText(cleaned)
+            }
+        } else {
+            if (onChangeText){
+                onChangeText(text)
+            }
+        }
+    }
+
+
   return (
-    <View style={[styles.container, props.containerStyles && props.containerStyles]}>
-        { props.icon && props.icon }
+    <View style={[styles.container, containerStyles]}>
+        { icon }
         <TextInput 
-            style={[styles.input, props.inputStyles && props.inputStyles]}
+            style={[styles.input, inputStyles]}
             placeholderTextColor={theme.colors.textLight}
-            ref={props.inputRef && props.inputRef}
+            ref={inputRef}
+            keyboardType={keyboardType}  
+            value={value}
+            onChangeText={handleTextChange}
             { ...props }
         />
     </View>

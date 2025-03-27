@@ -21,10 +21,10 @@ const Portfolio = () => {
     const { portfolioId, name, baseInvestment, currentValuation, profitLoss, percentChange } = useLocalSearchParams();
 
     const [isError, setIsError] = useState(false);
-    const [modalVisible, setModalVisible] = useState(false);
+    const [modalRenameVisible, setModalRenameVisible] = useState(false);
     const [newPortfolioName, setNewPortfolioName] = useState(name);
     const [portfolioName, setPortfolioName] = useState(name);
-    const [modalLoading, setModalLoading] = useState(false);
+    const [modalRenameLoading, setModalRenameLoading] = useState(false);
 
     // Fetch the assets
     const url = `http://10.0.2.2:3000/api/assets`
@@ -176,29 +176,33 @@ const Portfolio = () => {
 
     }
 
-    // Handle rename portfolio
-    const handleRenameButton = () => {
-        setModalVisible(true);
+    const toggleModal = (modalType) => {
+        if (modalType === "rename"){
+            setModalRenameVisible(true);
+        } else if (modalType === "sell"){
+            setModalSellVisible(true);
+        }
     }
 
+    // Handle rename portfolio
     const handleRenameConfirm = async(newName) => {
         console.log(`LOG: Trying to rename ${portfolioId} to ${newName}`)
 
         if(newName.trim()){
             try{
-                setModalLoading(true);
+                setModalRenameLoading(true);
                 const respond = await axios.patch(`http://10.0.2.2:3000/api/portfolios/${portfolioId}`,{ newName: newName })                
             
                 setPortfolioName(newName);
-                setModalLoading(false)
-                setModalVisible(false);
+                setModalRenameLoading(false)
+                setModalRenameVisible(false);
 
                 Alert.alert('Success', 'Portfolio renamed successfully')
 
             } catch (error) {
                 console.log('LOG: Error renaming portfolio', error)
-                setModalLoading(false);
-                setModalVisible(false);
+                setModalRenameLoading(false);
+                setModalRenameVisible(false);
                 Alert.alert('Error', 'Failed to rename portfolio. Please try again.')
 
             }
@@ -211,9 +215,17 @@ const Portfolio = () => {
     }
 
     const handleRenameCancel = () => {
-        setModalLoading(false);
-        setModalVisible(false);
+        setModalRenameLoading(false);
+        setModalRenameVisible(false);
         setNewPortfolioName(portfolioName);
+    }
+
+    // Handle selling asset
+
+    const handleSellCancel = () => {
+        console.log("Setting modal sell visible to false");
+        setModalSellLoading(false);
+        setModalSellVisible(false);
     }
 
     // Functiosn to format/style numbers
@@ -279,11 +291,7 @@ const Portfolio = () => {
 
     }
 
-    // handle selling asset button
-    const sellAsset = () => {
-
-    }
-
+    // render each asset
     const renderAsset = ({item}) => {
         const totalValue = parseFloat(item.amount) * parseFloat(item.current_price);
         // console.log(item.percent_change);
@@ -328,9 +336,17 @@ const Portfolio = () => {
                     <Text style={styles.assetValue}>({formatChange(percentChange, false)}%)</Text>
                 </View>
 
+                {/* Sell button */} 
                 <Button 
                     title="SELL" 
-                    onPress={() => {}}
+                    onPress={() => {
+                      router.push({
+                        pathname: '/sellAsset',
+                        params: {
+                            portfolioId: portfolioId,
+                        },
+                      })
+                    }}
                     buttonStyle={styles.sellButton}
                     textStyle={styles.sellButtonText}
                 />
@@ -369,13 +385,14 @@ const Portfolio = () => {
     const options = [
         {
             title: 'Rename Portfolio',
-            onPress: () => {handleRenameButton()}
+            onPress: () => {toggleModal("rename")}
         },
         {
             title: 'Delete Portfolio',
             onPress: () => {handleDeleteButton(portfolioId)}
         }
     ]
+
 
     // TODO: if assets not long enough, asset container doesn't grow until bottom.
     return(
@@ -456,7 +473,7 @@ const Portfolio = () => {
 
                     {/* Modal for Renaming Portfolio */}
                     <ReusableModal
-                        isVisible={modalVisible}
+                        isVisible={modalRenameVisible}
                         title={"Rename Your Portfolio"}
                         onCancel={handleRenameCancel}
                         onConfirm={() => handleRenameConfirm(newPortfolioName)}
@@ -467,10 +484,6 @@ const Portfolio = () => {
                             onChangeText={(text) => setNewPortfolioName(text)}
                         />
                     </ReusableModal>
-
-
-                    {/* Modal for Selling Asset */}
-
 
 
 
