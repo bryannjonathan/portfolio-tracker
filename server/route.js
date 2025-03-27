@@ -741,12 +741,16 @@ app.get('/api/getCryptoPrice', async(req, res) => {
 })
 
 /* 
-* 
-*/
+ * POST /api/sell_asset
+ * Receives asset, portfolioId, quantity, sellPrice and sells the asset
+ * Adds to transaction, removes/decrement from portfolio_assets
+ * */
 app.post('/api/sell_asset', async(req, res) => {
-    const { portfolioId, assetId, quantity, sellPrice } = req.query;
-
+    const { portfolioId, assetId, quantity, sellPrice } = req.body;
     console.log(`LOG: Trying to sell ${quantity} ${assetId} at $${sellPrice} each for portfolio ${portfolioId}`);
+    console.log(`Type Check: quantity ${typeof(quantity)}`)
+    console.log(`Type Check: asset_id ${typeof(assetId)}`)
+
 
     if (!portfolioId || !assetId || !quantity || !sellPrice){
         return res.status(400).json({
@@ -758,7 +762,7 @@ app.post('/api/sell_asset', async(req, res) => {
         await pool.query('BEGIN');
 
         const assetCheck = await pool.query(
-            `SELECT * FROM portfolio_assets WHERE portfolioId = $1 AND asset_id = $2`,
+            `SELECT * FROM portfolio_assets WHERE portfolio_id = $1 AND asset_id = $2`,
             [portfolioId, assetId]
         )
 
@@ -769,13 +773,13 @@ app.post('/api/sell_asset', async(req, res) => {
         if (newAmount == 0){
             // delete the asset from the portfolio
             await pool.query(
-                `DELETE FROM portfolio_assets WHERE portfolioId = $1 AND assetId = $2`,
+                `DELETE FROM portfolio_assets WHERE portfolio_id = $1 AND asset_id = $2`,
                 [portfolioId, assetId]
             );
         } else {
             // new amount is not 0
             await pool.query(
-                `UPDATE portfolio_assets SET amount = $1 WHERE portfolioId = $3 AND assetId = $4`,
+                `UPDATE portfolio_assets SET amount = $1 WHERE portfolio_id = $2 AND asset_id = $3`,
                 [newAmount, portfolioId, assetId]
             )
         }
@@ -791,14 +795,14 @@ app.post('/api/sell_asset', async(req, res) => {
         await pool.query(
             `UPDATE portfolios 
             SET base_investment = base_investment - $1,
-            current_valuation = current_valuation - $2,
+            current_valuation = current_valuation - $2
             WHERE portfolio_id = $3`,
             [quantity * average_buy_price, quantity * currentPrice, portfolioId]
         )
         
         // Add SELL to transaction
         await pool.query(
-            `INSER INTO transactions (portfolio_id, asset_id, transaction_type, quantity, total_value, currency)
+            `INSERT INTO transactions (portfolio_id, asset_id, transaction_type, quantity, total_value, currency)
             VALUES ($1, $2, $3, $4, $5, $6)`,
             [portfolioId, assetId, 'sell', quantity, (quantity * sellPrice), 'USD']
         );

@@ -76,7 +76,7 @@ const BuyAsset = () => {
 
             Alert.alert(
                 'Purchase Successful',
-                `Successfuly purhcased ${amount} of ${name}.`,
+                `Successfuly purchased ${amount} of ${name}.`,
                 [
                     {
                         text: 'OK',

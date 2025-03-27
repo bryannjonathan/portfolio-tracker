@@ -47,7 +47,47 @@ const SellAsset = () => {
         }).format(number);
     }
     
-    const handleBuy = async() => {
+    const handleSell = async() => {
+        console.log(`LOG: Trying to sell ${sellAmount} ${ticker} for $${price} each`);
+
+        if (isNaN(sellAmount) || sellAmount <= 0 || sellAmount > amount){
+            console.log('Invalid sellAmount value');
+            Alert.alert("Invalid Amount", "Enter a valid amount to sell");
+        }
+        
+        console.log('pass check')
+
+        const data = {
+            portfolioId: portfolioId.toString(),
+            assetId: parseInt(asset_id),
+            quantity: parseFloat(sellAmount),
+            sellPrice: parseFloat(price),
+            total: total,
+        }
+
+        try{
+            console.log('enter try')
+            const res = await axios.post('http://10.0.2.2:3000/api/sell_asset', data);
+            console.log(res)
+
+            Alert.alert(
+                'Sell Successful',
+                `Successfully sold ${sellAmount} of ${ticker}`,
+                [
+                    {
+                        text: 'OK',
+                        onPress: () => {
+                            router.back();
+                        }
+                    }
+                ]
+            )
+        } catch (err){
+            console.error(err)
+        }
+
+        
+
     }
 
        
@@ -133,10 +173,10 @@ const SellAsset = () => {
                     {/* Sell Button */}
                     <View style={styles.footer}>
                         <Button 
-                            title={'Purchase Asset'}
+                            title={'Sell Asset'}
                             buttonStyle={styles.buttonStyle}
                             textStyle={styles.buttonTextStyle}
-                            onPress={handleBuy}
+                            onPress={handleSell}
                         />
                     </View>
                                              
