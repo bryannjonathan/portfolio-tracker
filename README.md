@@ -14,11 +14,19 @@ A React Native mobile application for tracking stocks and crypto assets, viewing
   - Expo router for navigation
   - React query for fetching
   - Context API for state management
+  
 
 - **Backend**:
   - Node.js with Express
   - PostgreSQL database
   - JWT Authentication
+ 
+## Screenshots
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/b1e0f7a1-c1ce-4202-b185-c94ab60cdaac" width="30%" />
+  <img src="https://github.com/user-attachments/assets/3542ecce-575f-4f5e-a3cc-b134a6167f91" width="30%" />
+  <img src="https://github.com/user-attachments/assets/e22019fb-d943-4484-8324-fb02a3034e12" width="30%" />
+</p>
 
 ## Prerequisites:
 - Node.js (v14 or higher)
@@ -62,10 +70,12 @@ npx expo start
 - Scan the QR code with Expo Go app for physical device
 
 ## Current Development Status:
-✅ Authentication system
-✅ Home screen with news feed
-✅ Asset search functionality
-🛠️ Portfolio management
+✅ Authentication system (login/register/logout) <br>
+✅ Home screen with news feed <br>
+✅ Asset search functionality <br>
+✅ Automatic updates on stock prices <br>
+✅ Portfolio page completed with list of assets owned and a piechart <br>
+🛠️ Portfolio management <br>
 📝 More features coming soon...
 
 ## Contributing
