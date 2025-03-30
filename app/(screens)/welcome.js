@@ -24,7 +24,7 @@ const Welcome = () => {
                 {/* Title */}
                 <View>
                     <Text style={styles.title}>Investory</Text>
-                    <Text style={styles.subtitle}>Grow Your Own Story</Text>
+                    <Text style={styles.subtitle}>Where Investments Become Stories</Text>
                 </View>
             </View>
             
