@@ -1,3 +1,4 @@
+
 import { View, Text, StyleSheet, TouchableWithoutFeedback, Keyboard, FlatList, TouchableOpacity, Alert } from 'react-native';
 import React, { useState, useEffect, } from 'react';
 import ScreenWrapper from '../../components/ScreenWrapper';
@@ -13,7 +14,7 @@ import Slider from '@react-native-community/slider';
 const SellAsset = () => {
     const router = useRouter();
     
-    const { portfolioId, ticker, name, amount, lastPrice, asset_id }  = useLocalSearchParams()
+    const { portfolioId, ticker, name, amount, lastPrice, asset_id, }  = useLocalSearchParams()
 
     const [price, setPrice] = useState(lastPrice)
     const [total, setTotal] = useState(0)
@@ -32,12 +33,7 @@ const SellAsset = () => {
     
 
     // console.log(`In SellAsset.js
-    //     portfolioId: ${portfolioId},        
-    //     ticker: ${ticker},
-    //     name: ${name},
-    //     amount: ${amount},
-    //     last price: ${lastPrice},
-    //     asset_id: ${asset_id},
+    //     onSellSuccess: ${onSellSuccess}
     // `)
 
     const formatNumber = (number) => {
@@ -66,9 +62,9 @@ const SellAsset = () => {
         }
 
         try{
-            console.log('enter try')
+            // console.log('enter try')
             const res = await axios.post('http://10.0.2.2:3000/api/sell_asset', data);
-            console.log(res)
+            // console.log(res)
 
             Alert.alert(
                 'Sell Successful',

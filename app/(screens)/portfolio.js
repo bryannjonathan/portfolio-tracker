@@ -1,4 +1,6 @@
 import { Alert, View, Text, StyleSheet, TextInput, FlatList, ScrollView } from 'react-native';
+import React from 'react';
+import { useFocusEffect } from 'expo-router';
 import { theme } from '../../asset/theme';
 import { wp, hp } from '../../helpers/common';
 import Button from '../../components/Button';
@@ -64,13 +66,13 @@ const Portfolio = () => {
     // console.log('LOG: assets: ', assets)
 
 
-    // Refetch assets list when flag is true
-    // Used after user adds an asset to the portfolio
-    useEffect(() => {
-        if(router.params?.refetchFlag){
-            refetch();
-        }
-    }, [router.params?.refetchFlag])
+    // Refetch when screen is focused
+    useFocusEffect(
+        React.useCallback(() => {
+            refetch()
+        }, [])
+    )
+    
 
     // console.log('LOG: assets: ', assets)
 
@@ -222,11 +224,6 @@ const Portfolio = () => {
 
     // Handle selling asset
 
-    const handleSellCancel = () => {
-        console.log("Setting modal sell visible to false");
-        setModalSellLoading(false);
-        setModalSellVisible(false);
-    }
 
     // Functiosn to format/style numbers
     // Format number to $1,000,000.00 format
@@ -349,6 +346,7 @@ const Portfolio = () => {
                             amount: item.amount,
                             lastPrice: item.current_price,
                             asset_id: item.asset_id,
+                            onSellSuccess: refetch,
                         },
                       })
                     }}
