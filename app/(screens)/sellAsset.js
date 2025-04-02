@@ -32,9 +32,9 @@ const SellAsset = () => {
     },[sliderValue])
     
 
-    // console.log(`In SellAsset.js
-    //     onSellSuccess: ${onSellSuccess}
-    // `)
+    console.log(`In SellAsset.js
+        ticker = ${ticker}
+    `)
 
     const formatNumber = (number) => {
         return new Intl.NumberFormat('en-US', {

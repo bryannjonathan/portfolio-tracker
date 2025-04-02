@@ -295,6 +295,8 @@ const Portfolio = () => {
         const totalValue = parseFloat(item.amount) * parseFloat(item.current_price);
         const profitLoss = totalValue - (parseFloat(item.average_buy_price) * parseFloat(item.amount));
         const percentChange = ( profitLoss / parseFloat(item.average_buy_price)) * 100;
+
+
         return(
             <View style={styles.asset}>
                 <View style={styles.topAsset}>
@@ -341,7 +343,7 @@ const Portfolio = () => {
                         pathname: '/sellAsset',
                         params: {
                             portfolioId: portfolioId,
-                            ticker: item.asset_type === "stock" ? item.symbol : item.crypto_id,
+                            ticker: item.symbol,
                             name: item.name,
                             amount: item.amount,
                             lastPrice: item.current_price,
