@@ -33,6 +33,13 @@ const ALPHA_KEY = process.env.ALPHAV_API;
 
 // ROUTES
 
+/* 
+ * GET /ping
+ * */
+app.get('/ping', (req, res) => {
+    res.send('ping');
+})
+
 /*
 Register API
 - Gets username, email, password from user
