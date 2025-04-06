@@ -105,9 +105,11 @@ const Signup = () => {
             });
 
             const data = await response.json();
+            console.log(`LOG: Response: ${JSON.stringify(response)}`)
+            console.log(`LOG: Data: ${JSON.stringify(data)}`)
 
             if (!response.ok){
-                throw new Error(data.message);
+                throw new Error(data.error);
             }
 
             Alert.alert(

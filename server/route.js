@@ -4,7 +4,7 @@ Contains all the routes API of the project including
     - login, registration
 */
 
-require('dotenv').config();
+require('dotenv').config({ path: './server/.env' });
 
 var request = require('request');
 
@@ -41,6 +41,7 @@ Register API
 app.post("/register", async(req,res) => {
     try{
         const { username, email, password } = req.body;
+        console.log(`LOG: New user trying to register ${username} ${email} ${password}`)
 
         if(!username || !email || !password){
             return res.status(400).json({
@@ -62,7 +63,7 @@ app.post("/register", async(req,res) => {
         );
 
         res.status(201).json({
-            message: `${user} has successfuly registerd`,
+            message: `${username} has successfuly registerd`,
             user: userResult.rows[0]
         })
 
