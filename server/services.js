@@ -18,6 +18,12 @@ async function updateAssetPrices(){
     try{
         const assets = await pool.query('SELECT asset_id, asset_type, symbol, crypto_id FROM assets;')
 
+        // Skip if no assets
+        if (assets.rows.length === 0){
+            console.log('LOG: No assets found. Skipping updating...');
+            return;
+        }
+
         for (const asset of assets.rows){
             const { asset_id, asset_type, symbol, crypto_id } = asset
 
@@ -29,6 +35,12 @@ async function updateAssetPrices(){
                 url = `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINHUB_KEY}`
             } else if (asset_type === 'crypto')
                 url = `https://api.coingecko.com/api/v3/simple/price?ids=${crypto_id}&vs_currencies=USD` 
+            
+            // Check if url is valid
+            if (!url || typeof url != 'string' || !url.startsWith('http')){
+                console.warn(`LOG: Skipping ${assetId}: Invalid URL`)
+                continue
+            }
 
             try{
                 response = await axios.get(url);
