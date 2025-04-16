@@ -10,6 +10,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { wp, hp } from '../../helpers/common';
 import axios from 'axios';
 import Slider from '@react-native-community/slider';
+import { API_URL } from '../config';
 
 const SellAsset = () => {
     const router = useRouter();
@@ -63,7 +64,7 @@ const SellAsset = () => {
 
         try{
             // console.log('enter try')
-            const res = await axios.post('http://10.0.2.2:3000/api/sell_asset', data);
+            const res = await axios.post(`${API_URL}/api/sell_asset`, data);
             // console.log(res)
 
             Alert.alert(

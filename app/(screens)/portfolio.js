@@ -17,6 +17,7 @@ import OptionButton from '../../components/OptionButton';
 import { Provider } from 'react-native-paper';
 import Input from '../../components/Input';
 import ReusableModal from '../../components/Modal';
+import { API_URL } from '../config';
 
 const Portfolio = () => {
     const router = useRouter();
@@ -29,7 +30,7 @@ const Portfolio = () => {
     const [modalRenameLoading, setModalRenameLoading] = useState(false);
 
     // Fetch the assets
-    const url = `http://10.0.2.2:3000/api/assets`
+    const url = `${API_URL}/api/assets`
     const fetchAssets = async () => {
         try{
             console.log(`LOG: Fetching assets for portfolio ${portfolioId}`)
@@ -157,7 +158,7 @@ const Portfolio = () => {
                     text: 'OK',
                     onPress: async () => {
                         try{
-                            await axios.delete(`http://10.0.2.2:3000/api/portfolios/${portfolioId}`)
+                            await axios.delete(`${API_URL}/api/portfolios/${portfolioId}`)
                             console.log('SUCCESS')
 
                             router.replace({
@@ -193,7 +194,7 @@ const Portfolio = () => {
         if(newName.trim()){
             try{
                 setModalRenameLoading(true);
-                const respond = await axios.patch(`http://10.0.2.2:3000/api/portfolios/${portfolioId}`,{ newName: newName })                
+                const respond = await axios.patch(`${API_URL}/api/portfolios/${portfolioId}`,{ newName: newName })                
             
                 setPortfolioName(newName);
                 setModalRenameLoading(false)

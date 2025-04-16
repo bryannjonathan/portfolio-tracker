@@ -12,6 +12,7 @@ import { useState, useRef } from 'react'
 import { FontAwesome5Brands } from '@expo/vector-icons'
 import { useAuth } from '../../context/AuthContext';
 import { Alert } from 'react-native';
+import { API_URL } from '../config'
 
 const Login = () => {
     const router = useRouter();
@@ -38,7 +39,7 @@ const Login = () => {
             setLoading(true);
 
             // or use 10.0.2.2
-            const response = await fetch("http://10.0.2.2:3000/login", {
+            const response = await fetch(`${API_URL}/login`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

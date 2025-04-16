@@ -13,7 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import Loading from '../../components/Loading';
-
+import { API_URL } from '../config';
 
 const Portfolio = () => {
     const { user } = useAuth();
@@ -24,7 +24,7 @@ const Portfolio = () => {
 
     const router = useRouter()
 
-    const url = 'http://10.0.2.2:3000/api/portfolios'
+    const url = `${API_URL}/api/portfolios`
 
     // Fetch portfolios
     const fetchPortfolios = async () => {

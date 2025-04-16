@@ -9,6 +9,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AntDesign } from '@expo/vector-icons'
 import { wp, hp } from '../../helpers/common';
 import axios from 'axios';
+import { API_URL } from '../config';
 
 const AddAsset = () => {
     const router = useRouter();
@@ -26,7 +27,7 @@ const AddAsset = () => {
         try{
             console.log(`isStock: ${isStock}, keyword: ${query}`);
 
-            const url = isStock ? `http://10.0.2.2:3000/api/searchStock?keyword=${encodeURIComponent(query)}` : `http://10.0.2.2:3000/api/searchCrypto?keyword=${encodeURIComponent(query)}`
+            const url = isStock ? `${API_URL}/api/searchStock?keyword=${encodeURIComponent(query)}` : `${API_URL}/api/searchCrypto?keyword=${encodeURIComponent(query)}`
 
             const res = await axios.get(url);
             console.log("res", res.data.data);

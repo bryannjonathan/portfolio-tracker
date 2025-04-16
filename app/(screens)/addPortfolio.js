@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text } from 'react-native';
+API_URLimport { StyleSheet, View, Text } from 'react-native';
 import { theme } from '../../asset/theme';
 import { wp, hp } from '../../helpers/common';
 import ScreenWrapper from '../../components/ScreenWrapper';
@@ -10,7 +10,7 @@ import Button from '../../components/Button';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { Alert } from 'react-native';
-
+import { API_URL } from '../config';
 
 
 const addPortfolio = () => {
@@ -32,7 +32,7 @@ const addPortfolio = () => {
 
         try{
             console.log("enter try");
-            const url = "http://10.0.2.2:3000/api/portfolios/" 
+            const url = `${API_URL}/api/portfolios/` 
             const userId = user.user_id;
 
             const res = await axios.post(url, { userId, name });

@@ -9,6 +9,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AntDesign }from '@expo/vector-icons'
 import { wp, hp } from '../../helpers/common';
 import axios from 'axios';
+import { API_URL } from '../config';
 
 const BuyAsset = () => {
     const router = useRouter();
@@ -68,7 +69,7 @@ const BuyAsset = () => {
 
         try{
             console.log('Enter try statement')
-            const res = await axios.post('http://10.0.2.2:3000/api/purchase_asset', data)
+            const res = await axios.post(`${API_URL}/api/purchase_asset`, data)
 
             // Logging
             console.log('LOG: Successful purhcase');

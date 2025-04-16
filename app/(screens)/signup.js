@@ -9,8 +9,7 @@ import { hp, wp } from '../../helpers/common'
 import Input from '../../components/Input'
 import Button from '../../components/Button'
 import { useState, useRef } from 'react'
-import { FontAwesome5Brands } from '@expo/vector-icons'
-import { endpoints } from '../../config/api'
+import { API_URL } from '../config'
 
 
 const Signup = () => {
@@ -92,7 +91,7 @@ const Signup = () => {
             //         password,
             //     })
             // });
-            const response = await fetch("http://10.0.2.2:3000/register", {
+            const response = await fetch("${API_URL}/register", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

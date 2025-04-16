@@ -13,14 +13,7 @@ import axios from 'axios'
 import Button from '../../components/Button'
 import Loading from '../../components/Loading'
 import FakeInput from '../../components/FakeInput'
-
-
-// TODO: 
-// - change so that it doesn't always fetch the news everytime the page is loaded. Use caching or something, and refresh feature.
-// - pull up very much to refresh the page then it will refetch the news. Otherwise it stays there.
-// - First time opening also fetches the news
-// - Look how it handles error
-// - Fix loadingd
+import { API_URL } from '../config'
 
 
 const Home = () => {
@@ -46,7 +39,7 @@ const Home = () => {
     const fetchNews = async ({ pageParam = 1 }) => {
         console.log(`Fetch news for page ${pageParam}`)
         const limit = 10;
-        const res = await axios.get(`http://10.0.2.2:3000/api/news?page=${pageParam}&limit=${limit}`);
+        const res = await axios.get(`${API_URL}/api/news?page=${pageParam}&limit=${limit}`);
 
         // console.log(`API Response:`, res.data);
 
