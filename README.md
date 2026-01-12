@@ -2,7 +2,7 @@
 
 A React Native mobile application for tracking stocks and crypto assets, viewing market relevant news, and managing investment portfolios.
 
-## Features (In Development)
+## Features
 - **User Authentication**: Secure login and registration system
 - **Market News**: Stay updated with the latest market news
 - **Search**: Search and track your favorite assets
