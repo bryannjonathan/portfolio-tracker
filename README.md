@@ -1,4 +1,4 @@
-# A Portfolio Tracker - Investory (Work in Progess)
+# A Portfolio Tracker - Investory
 
 A React Native mobile application for tracking stocks and crypto assets, viewing market relevant news, and managing investment portfolios.
 
